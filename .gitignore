@@ -1,0 +1,11 @@
+results/
+*.fastq.gz
+*.fq.gz
+*.bam
+*.bai
+*.vcf
+*.vcf.gz
+*.fasta
+*.fa
+*.fa.fai
+dev/
