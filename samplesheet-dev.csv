@@ -1,2 +1,2 @@
-sample_id,r1_fastq,r2_fastq,library_type,sex,is_synthetic_phenotype
-NA12878,dev/NA12878_R1.fastq.gz,dev/NA12878_R2.fastq.gz,paired,female,true
+sample_id,condition,replicate,library_type,r1_fastq,r2_fastq
+NA12878,affected,1,paired,dev/NA12878_R1.fastq.gz,dev/NA12878_R2.fastq.gz
