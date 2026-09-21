@@ -1,1 +1,9 @@
 sample_id,r1_fastq,r2_fastq,library_type,sex,is_synthetic_phenotype
+NA12878,/courses/BINF6610.202710/data/fastq-variant/NA12878_R1.fastq.gz,/courses/BINF6610.202710/data/fastq-variant/NA12878_R2.fastq.gz,paired,female,true
+NA12891,/courses/BINF6610.202710/data/fastq-variant/NA12891_R1.fastq.gz,/courses/BINF6610.202710/data/fastq-variant/NA12891_R2.fastq.gz,paired,male,true
+NA12892,/courses/BINF6610.202710/data/fastq-variant/NA12892_R1.fastq.gz,,single,female,true
+NA07357,/courses/BINF6610.202710/data/fastq-variant/NA07357_R1.fastq.gz,/courses/BINF6610.202710/data/fastq-variant/NA07357_R2.fastq.gz,paired,male,true
+NA12003,/courses/BINF6610.202710/data/fastq-variant/NA12003_R1.fastq.gz,,single,male,true
+NA10851,/courses/BINF6610.202710/data/fastq-variant/NA10851_R1.fastq.gz,/courses/BINF6610.202710/data/fastq-variant/NA10851_R2.fastq.gz,paired,male,true
+NA12813,/courses/BINF6610.202710/data/fastq-variant/NA12813_R1.fastq.gz,/courses/BINF6610.202710/data/fastq-variant/NA12813_R2.fastq.gz,paired,female,true
+NA12873,/courses/BINF6610.202710/data/fastq-variant/NA12873_R1.fastq.gz,/courses/BINF6610.202710/data/fastq-variant/NA12873_R2.fastq.gz,paired,female,true
