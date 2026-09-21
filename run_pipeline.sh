@@ -134,8 +134,113 @@ stage_validate() {
     log "stage 0: all samples validated OK"
 }
 
-stage_qc_raw()      { log "stage 1 (qc_raw): TODO - FastQC on raw FASTQ"; }
-stage_trim()        { log "stage 2 (trim): TODO - fastp adapter/quality trim"; }
+# Populates SAMPLE_IDS, R1_LIST, R2_LIST, LIB_TYPES (parallel arrays, same
+# row order as the samplesheet). Used by every per-sample stage from here on
+# so the parsing logic lives in one place.
+read_samples() {
+    SAMPLE_IDS=()
+    R1_LIST=()
+    R2_LIST=()
+    LIB_TYPES=()
+
+    local header
+    header="$(head -n1 -- "$SAMPLESHEET")"
+    header="${header%$'\r'}"
+
+    local -a cols
+    IFS=',' read -r -a cols <<< "$header"
+
+    local -A idx=()
+    local i
+    for i in "${!cols[@]}"; do
+        idx["${cols[$i]}"]="$i"
+    done
+
+    local idx_id=${idx[sample_id]} idx_r1=${idx[r1_fastq]} idx_r2=${idx[r2_fastq]} idx_lib=${idx[library_type]}
+
+    local line
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ -z "$line" ]] && continue
+        line="${line%$'\r'}"
+        local -a f
+        IFS=',' read -r -a f <<< "$line"
+        SAMPLE_IDS+=("${f[$idx_id]}")
+        R1_LIST+=("${f[$idx_r1]}")
+        R2_LIST+=("${f[$idx_r2]:-}")
+        LIB_TYPES+=("${f[$idx_lib]:-}")
+    done < <(tail -n +2 -- "$SAMPLESHEET")
+}
+
+stage_qc_raw() {
+    log "stage 1 (qc_raw): FastQC on raw FASTQ"
+    command -v fastqc >/dev/null 2>&1 || { log "fastqc not found on PATH"; return 1; }
+
+    read_samples
+    local qc_dir="$OUTDIR/qc_raw"
+    mkdir -p "$qc_dir"
+
+    local i
+    for i in "${!SAMPLE_IDS[@]}"; do
+        local sample_id="${SAMPLE_IDS[$i]}" r1="${R1_LIST[$i]}" r2="${R2_LIST[$i]}"
+        local sample_dir="$qc_dir/$sample_id"
+        mkdir -p "$sample_dir"
+        log "qc_raw: $sample_id"
+
+        if [[ -n "$r2" ]]; then
+            fastqc --quiet --outdir "$sample_dir" "$r1" "$r2" \
+                > "$sample_dir/fastqc.log" 2>&1 \
+                || { log "fastqc failed for sample '$sample_id'"; return 1; }
+        else
+            fastqc --quiet --outdir "$sample_dir" "$r1" \
+                > "$sample_dir/fastqc.log" 2>&1 \
+                || { log "fastqc failed for sample '$sample_id'"; return 1; }
+        fi
+    done
+
+    log "stage 1: qc_raw complete for ${#SAMPLE_IDS[@]} sample(s)"
+}
+
+stage_trim() {
+    log "stage 2 (trim): fastp adapter/quality trim"
+    command -v fastp >/dev/null 2>&1 || { log "fastp not found on PATH"; return 1; }
+
+    read_samples
+    local trim_dir="$OUTDIR/trim"
+    mkdir -p "$trim_dir"
+
+    local i
+    for i in "${!SAMPLE_IDS[@]}"; do
+        local sample_id="${SAMPLE_IDS[$i]}" r1="${R1_LIST[$i]}" r2="${R2_LIST[$i]}"
+        local sample_dir="$trim_dir/$sample_id"
+        mkdir -p "$sample_dir"
+        log "trim: $sample_id"
+
+        if [[ -n "$r2" ]]; then
+            fastp \
+                -i "$r1" -I "$r2" \
+                -o "$sample_dir/${sample_id}_R1.trimmed.fastq.gz" \
+                -O "$sample_dir/${sample_id}_R2.trimmed.fastq.gz" \
+                --json "$sample_dir/fastp.json" \
+                --html "$sample_dir/fastp.html" \
+                > "$sample_dir/fastp.log" 2>&1 \
+                || { log "fastp failed for sample '$sample_id'"; return 1; }
+        else
+            fastp \
+                -i "$r1" \
+                -o "$sample_dir/${sample_id}_R1.trimmed.fastq.gz" \
+                --json "$sample_dir/fastp.json" \
+                --html "$sample_dir/fastp.html" \
+                > "$sample_dir/fastp.log" 2>&1 \
+                || { log "fastp failed for sample '$sample_id'"; return 1; }
+        fi
+
+        [[ -s "$sample_dir/${sample_id}_R1.trimmed.fastq.gz" ]] \
+            || { log "trim produced an empty R1 for sample '$sample_id'"; return 1; }
+    done
+
+    log "stage 2: trim complete for ${#SAMPLE_IDS[@]} sample(s)"
+}
+
 stage_align()       { log "stage 3 (align): TODO - BWA-MEM against full GRCh38"; }
 stage_postprocess() { log "stage 4 (postprocess): TODO - sort, index, mark duplicates"; }
 stage_quantify()    { log "stage 5 (quantify): TODO - HaplotypeCaller -ERC GVCF -L chr20:1-10000000"; }
