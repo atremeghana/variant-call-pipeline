@@ -28,7 +28,7 @@ log() {
     echo "[$(date -u +%FT%TZ)] $*" >&2
 }
 
-REQUIRED_COLS=(sample_id condition replicate library_type r1_fastq r2_fastq)
+REQUIRED_COLS=(sample_id r1_fastq r2_fastq library_type sex is_synthetic_phenotype)
 
 stage_validate() {
     log "stage 0 (validate): checking samplesheet and inputs"
@@ -74,7 +74,6 @@ stage_validate() {
     local idx_sample_id=${col_index[sample_id]}
     local idx_r1=${col_index[r1_fastq]}
     local idx_r2=${col_index[r2_fastq]}
-    local idx_lib=${col_index[library_type]}
 
     # --- body: check every row, collecting every problem before exiting ---
     local line_no=1
@@ -91,7 +90,6 @@ stage_validate() {
         local sample_id="${fields[$idx_sample_id]:-}"
         local r1="${fields[$idx_r1]:-}"
         local r2="${fields[$idx_r2]:-}"
-        local lib="${fields[$idx_lib]:-}"
 
         if [[ -z "$sample_id" ]]; then
             errors+=("row $line_no: empty sample_id")
@@ -114,13 +112,8 @@ stage_validate() {
             errors+=("sample '$sample_id': r1_fastq is truncated or corrupt: $r1")
         fi
 
-        # r2 is only optional when library_type says single-end. A paired row
-        # with no mate is broken, not single-end-by-accident.
-        if [[ -z "$r2" ]]; then
-            if [[ "$lib" == "paired" ]]; then
-                errors+=("sample '$sample_id': library_type is paired but r2_fastq is empty (no mate)")
-            fi
-        else
+        # r2 is optional (empty = single-end, per the samplesheet, never per the name)
+        if [[ -n "$r2" ]]; then
             if [[ ! -f "$r2" ]]; then
                 errors+=("sample '$sample_id': r2_fastq not found: $r2")
             elif [[ "$r2" == *.gz ]] && ! gzip -t -- "$r2" 2>/dev/null; then
