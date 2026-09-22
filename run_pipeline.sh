@@ -479,7 +479,47 @@ stage_merge() {
 
     log "stage 6: merge complete - cohort VCF at $cohort_vcf"
 }
-stage_analyze()     { log "stage 7 (analyze): TODO - VariantFiltration + annotate"; }
+stage_analyze() {
+    log "stage 7 (analyze): hard-filter and annotate the cohort VCF"
+    command -v gatk >/dev/null 2>&1 || { log "gatk not found on PATH"; return 1; }
+
+    if [[ -z "${REFERENCE_FASTA:-}" ]]; then
+        log "REFERENCE_FASTA is not set (check conf/pipeline.env)"; return 1
+    fi
+    if [[ ! -f "$REFERENCE_FASTA" ]]; then
+        log "reference FASTA not found: $REFERENCE_FASTA"; return 1
+    fi
+
+    local cohort_vcf="$OUTDIR/merge/cohort.vcf.gz"
+    [[ -s "$cohort_vcf" ]] \
+        || { log "analyze: no cohort VCF found (expected $cohort_vcf - run stage merge first)"; return 1; }
+
+    local analyze_dir="$OUTDIR/analyze"
+    mkdir -p "$analyze_dir"
+    local filtered_vcf="$analyze_dir/cohort.filtered.vcf.gz"
+
+    # Standard GATK germline hard-filter thresholds, applied as one combined
+    # pass rather than the usual separate SNP/indel split - a reasonable
+    # simplification at this scale (10Mb, 8 samples).
+    log "analyze: applying hard filters"
+    gatk VariantFiltration \
+        -R "$REFERENCE_FASTA" \
+        -V "$cohort_vcf" \
+        -O "$filtered_vcf" \
+        --filter-expression "QD < 2.0"             --filter-name "QD2" \
+        --filter-expression "FS > 60.0"             --filter-name "FS60" \
+        --filter-expression "MQ < 40.0"             --filter-name "MQ40" \
+        --filter-expression "MQRankSum < -12.5"     --filter-name "MQRankSum-12.5" \
+        --filter-expression "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8" \
+        --filter-expression "SOR > 3.0"             --filter-name "SOR3" \
+        > "$analyze_dir/variantfiltration.log" 2>&1 \
+        || { log "gatk VariantFiltration failed"; return 1; }
+
+    [[ -s "$filtered_vcf" ]] || { log "analyze produced an empty filtered VCF"; return 1; }
+
+    log "stage 7: analyze complete - filtered/annotated cohort VCF at $filtered_vcf"
+    log "NOTE: is_synthetic_phenotype is true for every sample in this cohort. 'condition' is a synthetic grouping factor for pipeline testing only, never a real clinical finding - carry this forward into any downstream report."
+}
 stage_qc_report()   { log "stage 8 (qc_report): TODO - MultiQC across the cohort"; }
 stage_publish()     { log "stage 9 (publish): TODO - tidy TSVs + manifest.json"; }
 
