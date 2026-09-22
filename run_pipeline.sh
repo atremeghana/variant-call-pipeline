@@ -368,7 +368,62 @@ stage_postprocess() {
 
     log "stage 4: postprocess complete for ${#SAMPLE_IDS[@]} sample(s)"
 }
-stage_quantify()    { log "stage 5 (quantify): TODO - HaplotypeCaller -ERC GVCF -L chr20:1-10000000"; }
+stage_quantify() {
+    log "stage 5 (quantify): per-sample GVCF calling, restricted to \$CALL_REGION"
+    command -v gatk >/dev/null 2>&1 || { log "gatk not found on PATH"; return 1; }
+
+    if [[ -z "${REFERENCE_FASTA:-}" ]]; then
+        log "REFERENCE_FASTA is not set (check conf/pipeline.env)"
+        return 1
+    fi
+    if [[ ! -f "$REFERENCE_FASTA" ]]; then
+        log "reference FASTA not found: $REFERENCE_FASTA"
+        return 1
+    fi
+    if [[ ! -f "${REFERENCE_FASTA}.fai" ]]; then
+        log "reference .fai index missing - run 'samtools faidx $REFERENCE_FASTA'"
+        return 1
+    fi
+    local dict="${REFERENCE_FASTA%.*}.dict"
+    if [[ ! -f "$dict" ]]; then
+        log "reference sequence dictionary missing - run 'gatk CreateSequenceDictionary -R $REFERENCE_FASTA'"
+        return 1
+    fi
+    if [[ -z "${CALL_REGION:-}" ]]; then
+        log "CALL_REGION is not set (check conf/pipeline.env) - e.g. chr20:1-10000000"
+        return 1
+    fi
+
+    read_samples
+    local q_dir="$OUTDIR/quantify"
+    mkdir -p "$q_dir"
+
+    local i
+    for i in "${!SAMPLE_IDS[@]}"; do
+        local sample_id="${SAMPLE_IDS[$i]}"
+        local dedup_bam="$OUTDIR/postprocess/$sample_id/${sample_id}.dedup.bam"
+        local sample_dir="$q_dir/$sample_id"
+        mkdir -p "$sample_dir"
+        local gvcf="$sample_dir/${sample_id}.g.vcf.gz"
+        log "quantify: $sample_id"
+
+        [[ -s "$dedup_bam" ]] \
+            || { log "quantify: no deduplicated BAM for sample '$sample_id' (expected $dedup_bam - run stage postprocess first)"; return 1; }
+
+        gatk HaplotypeCaller \
+            -R "$REFERENCE_FASTA" \
+            -I "$dedup_bam" \
+            -O "$gvcf" \
+            -ERC GVCF \
+            -L "$CALL_REGION" \
+            > "$sample_dir/haplotypecaller.log" 2>&1 \
+            || { log "gatk HaplotypeCaller failed for sample '$sample_id'"; return 1; }
+
+        [[ -s "$gvcf" ]] || { log "quantify produced an empty GVCF for sample '$sample_id'"; return 1; }
+    done
+
+    log "stage 5: quantify complete for ${#SAMPLE_IDS[@]} sample(s)"
+}
 stage_merge()       { log "stage 6 (merge): TODO - GenomicsDBImport + GenotypeGVCFs"; }
 stage_analyze()     { log "stage 7 (analyze): TODO - VariantFiltration + annotate"; }
 stage_qc_report()   { log "stage 8 (qc_report): TODO - MultiQC across the cohort"; }
