@@ -324,7 +324,50 @@ stage_align() {
 
     log "stage 3: align complete for ${#SAMPLE_IDS[@]} sample(s)"
 }
-stage_postprocess() { log "stage 4 (postprocess): TODO - sort, index, mark duplicates"; }
+stage_postprocess() {
+    log "stage 4 (postprocess): sort, index, mark duplicates"
+    command -v samtools >/dev/null 2>&1 || { log "samtools not found on PATH"; return 1; }
+    command -v gatk >/dev/null 2>&1 || { log "gatk not found on PATH"; return 1; }
+
+    read_samples
+    local pp_dir="$OUTDIR/postprocess"
+    mkdir -p "$pp_dir"
+    local threads="${THREADS:-4}"
+
+    local i
+    for i in "${!SAMPLE_IDS[@]}"; do
+        local sample_id="${SAMPLE_IDS[$i]}"
+        local align_bam="$OUTDIR/align/$sample_id/${sample_id}.bam"
+        local sample_dir="$pp_dir/$sample_id"
+        mkdir -p "$sample_dir"
+        local sorted_bam="$sample_dir/${sample_id}.sorted.bam"
+        local dedup_bam="$sample_dir/${sample_id}.dedup.bam"
+        local metrics="$sample_dir/${sample_id}.dup_metrics.txt"
+        log "postprocess: $sample_id"
+
+        [[ -s "$align_bam" ]] \
+            || { log "postprocess: no aligned BAM for sample '$sample_id' (expected $align_bam - run stage align first)"; return 1; }
+
+        samtools sort -@ "$threads" -o "$sorted_bam" "$align_bam" \
+            > "$sample_dir/sort.log" 2>&1 \
+            || { log "samtools sort failed for sample '$sample_id'"; return 1; }
+
+        gatk MarkDuplicates \
+            -I "$sorted_bam" \
+            -O "$dedup_bam" \
+            -M "$metrics" \
+            > "$sample_dir/markdup.log" 2>&1 \
+            || { log "gatk MarkDuplicates failed for sample '$sample_id'"; return 1; }
+
+        samtools index "$dedup_bam" \
+            > "$sample_dir/index.log" 2>&1 \
+            || { log "samtools index failed for sample '$sample_id'"; return 1; }
+
+        [[ -s "$dedup_bam" ]] || { log "postprocess produced an empty BAM for sample '$sample_id'"; return 1; }
+    done
+
+    log "stage 4: postprocess complete for ${#SAMPLE_IDS[@]} sample(s)"
+}
 stage_quantify()    { log "stage 5 (quantify): TODO - HaplotypeCaller -ERC GVCF -L chr20:1-10000000"; }
 stage_merge()       { log "stage 6 (merge): TODO - GenomicsDBImport + GenotypeGVCFs"; }
 stage_analyze()     { log "stage 7 (analyze): TODO - VariantFiltration + annotate"; }
