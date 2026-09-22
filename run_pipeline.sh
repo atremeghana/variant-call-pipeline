@@ -20,6 +20,7 @@ usage() {
 SAMPLESHEET="$1"
 OUTDIR="$2"
 LAST_STAGE="$3"
+PIPELINE_STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 # Pull in cluster/reference config. Safe to be missing on a laptop dev run —
 # stage 0 reports that as one complaint, not a crash.
@@ -540,7 +541,159 @@ stage_qc_report() {
 
     log "stage 8: qc_report complete - report at $report_dir/multiqc_report.html"
 }
-stage_publish()     { log "stage 9 (publish): TODO - tidy TSVs + manifest.json"; }
+stage_publish() {
+    log "stage 9 (publish): tidy TSVs + manifest.json"
+
+    local pub_dir="$OUTDIR/publish"
+    mkdir -p "$pub_dir"
+
+    # --- git provenance: the commit this run's code was on, and whether it's dirty ---
+    local git_sha="unknown"
+    if git -C "$SCRIPT_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+        git_sha="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || echo unknown)"
+        if ! git -C "$SCRIPT_DIR" diff --quiet 2>/dev/null || ! git -C "$SCRIPT_DIR" diff --cached --quiet 2>/dev/null; then
+            git_sha="${git_sha}-dirty"
+        fi
+    fi
+
+    local run_id finished_at started_at platform_kind genome_desc
+    run_id="$(date -u +%Y-%m-%dT%H:%M:%SZ)-$(printf '%04x' $((RANDOM % 65536)))"
+    finished_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    started_at="${PIPELINE_STARTED_AT:-$finished_at}"
+    platform_kind="laptop"
+    [[ -n "${SLURM_JOB_ID:-}" ]] && platform_kind="slurm"
+    genome_desc="GRCh38.${CALL_REGION:-unknown}"
+
+    json_escape() {
+        local s=$1
+        s=${s//\\/\\\\}
+        s=${s//\"/\\\"}
+        printf '%s' "$s"
+    }
+    checksum() {
+        local f=$1
+        if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "$f" | awk '{print $1}'
+        elif command -v shasum >/dev/null 2>&1; then
+            shasum -a 256 "$f" | awk '{print $1}'
+        else
+            printf '%064d' 0
+        fi
+    }
+
+    read_samples
+
+    # read_samples() doesn't track condition/replicate - pull those here too
+    local -a COND_LIST=() REPL_LIST=()
+    local header; header="$(head -n1 -- "$SAMPLESHEET")"; header="${header%$'\r'}"
+    local -a cols; IFS=',' read -r -a cols <<< "$header"
+    local -A idx=(); local ci
+    for ci in "${!cols[@]}"; do idx["${cols[$ci]}"]="$ci"; done
+    local idx_cond=${idx[condition]} idx_repl=${idx[replicate]}
+    local line2
+    while IFS= read -r line2 || [[ -n "$line2" ]]; do
+        [[ -z "$line2" ]] && continue
+        line2="${line2%$'\r'}"
+        local -a f2; IFS=',' read -r -a f2 <<< "$line2"
+        COND_LIST+=("${f2[$idx_cond]:-}")
+        REPL_LIST+=("${f2[$idx_repl]:-}")
+    done < <(tail -n +2 -- "$SAMPLESHEET")
+
+    # --- samples[] ---
+    local samples_json="" i
+    for i in "${!SAMPLE_IDS[@]}"; do
+        [[ -n "$samples_json" ]] && samples_json+=","
+        local sid lib cond
+        sid=$(json_escape "${SAMPLE_IDS[$i]}")
+        lib="paired"; [[ -z "${R2_LIST[$i]}" ]] && lib="single"
+        cond=$(json_escape "${COND_LIST[$i]:-unknown}")
+        samples_json+="{\"sample_id\":\"$sid\",\"library_type\":\"$lib\",\"condition\":\"$cond\"}"
+    done
+
+    # --- outputs[] : every artifact that actually exists, checksummed ---
+    local outputs_json=""
+    add_output() {
+        local stage=$1 type=$2 path=$3
+        [[ -s "$path" ]] || return 0
+        local rel="${path#"$OUTDIR"/}"
+        local sum; sum=$(checksum "$path")
+        [[ -n "$outputs_json" ]] && outputs_json+=","
+        outputs_json+="{\"stage\":\"$stage\",\"type\":\"$type\",\"path\":\"$(json_escape "$rel")\",\"checksum\":\"sha256:$sum\"}"
+    }
+    for i in "${!SAMPLE_IDS[@]}"; do
+        local sid="${SAMPLE_IDS[$i]}"
+        add_output "align"       "bam"  "$OUTDIR/align/$sid/${sid}.bam"
+        add_output "postprocess" "bam"  "$OUTDIR/postprocess/$sid/${sid}.dedup.bam"
+        add_output "quantify"    "gvcf" "$OUTDIR/quantify/$sid/${sid}.g.vcf.gz"
+    done
+    add_output "merge"     "cohort_vcf" "$OUTDIR/merge/cohort.vcf.gz"
+    add_output "analyze"   "cohort_vcf" "$OUTDIR/analyze/cohort.filtered.vcf.gz"
+    add_output "qc_report" "multiqc"    "$OUTDIR/qc_report/multiqc_report.html"
+
+    # --- metrics[] : long format, sample_id null for cohort-level ---
+    local metrics_json=""
+    add_metric() {
+        local sid=$1 metric=$2 value=$3 unit=$4 stage=$5
+        [[ -n "$metrics_json" ]] && metrics_json+=","
+        local sid_field="null"
+        [[ -n "$sid" ]] && sid_field="\"$(json_escape "$sid")\""
+        metrics_json+="{\"sample_id\":$sid_field,\"metric\":\"$metric\",\"value\":$value,\"unit\":\"$unit\",\"stage\":\"$stage\"}"
+    }
+    for i in "${!SAMPLE_IDS[@]}"; do
+        local sid="${SAMPLE_IDS[$i]}" r1="${R1_LIST[$i]}"
+        if [[ -f "$r1" ]]; then
+            local reads; reads=$(zcat -- "$r1" 2>/dev/null | wc -l); reads=$(( reads / 4 ))
+            add_metric "$sid" "reads_raw" "$reads" "count" "qc_raw"
+        fi
+    done
+    local filtered_vcf="$OUTDIR/analyze/cohort.filtered.vcf.gz"
+    if [[ -s "$filtered_vcf" ]]; then
+        local n_pass
+        n_pass=$(zcat -- "$filtered_vcf" 2>/dev/null | awk -F'\t' '!/^#/ && $7 == "PASS"' | wc -l)
+        add_metric "" "n_variants_pass" "$n_pass" "count" "analyze"
+    fi
+
+    # --- write manifest.json ---
+    local manifest="$pub_dir/manifest.json"
+    cat > "$manifest" <<JSON
+{
+  "pipeline": {
+    "name": "variant-call",
+    "version": "1.0.0",
+    "implementation": "bash",
+    "git_sha": "$git_sha",
+    "run_id": "$run_id",
+    "started_at": "$started_at",
+    "finished_at": "$finished_at",
+    "exit_status": "success"
+  },
+  "platform": {
+    "kind": "$platform_kind"
+  },
+  "reference": {
+    "genome": "$genome_desc"
+  },
+  "samples": [$samples_json],
+  "outputs": [$outputs_json],
+  "metrics": [$metrics_json]
+}
+JSON
+    [[ -s "$manifest" ]] || { log "publish: failed to write manifest.json"; return 1; }
+
+    # --- tidy TSVs ---
+    local tsv_dir="$pub_dir/tsv"
+    mkdir -p "$tsv_dir"
+    {
+        printf 'sample_id\tcondition\treplicate\tlibrary_type\n'
+        for i in "${!SAMPLE_IDS[@]}"; do
+            local lib="paired"; [[ -z "${R2_LIST[$i]}" ]] && lib="single"
+            printf '%s\t%s\t%s\t%s\n' "${SAMPLE_IDS[$i]}" "${COND_LIST[$i]:-}" "${REPL_LIST[$i]:-}" "$lib"
+        done
+    } > "$tsv_dir/samples.tsv"
+
+    log "stage 9: publish complete - manifest at $manifest (git_sha=$git_sha), tidy TSVs at $tsv_dir"
+    log "NOTE: is_synthetic_phenotype is true for this whole cohort - 'condition' is a synthetic grouping factor for pipeline testing, never a real clinical finding."
+}
 
 mkdir -p "$OUTDIR"
 
