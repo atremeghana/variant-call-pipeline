@@ -520,7 +520,26 @@ stage_analyze() {
     log "stage 7: analyze complete - filtered/annotated cohort VCF at $filtered_vcf"
     log "NOTE: is_synthetic_phenotype is true for every sample in this cohort. 'condition' is a synthetic grouping factor for pipeline testing only, never a real clinical finding - carry this forward into any downstream report."
 }
-stage_qc_report()   { log "stage 8 (qc_report): TODO - MultiQC across the cohort"; }
+stage_qc_report() {
+    log "stage 8 (qc_report): MultiQC across the cohort"
+    command -v multiqc >/dev/null 2>&1 || { log "multiqc not found on PATH"; return 1; }
+
+    local report_dir="$OUTDIR/qc_report"
+    mkdir -p "$report_dir"
+
+    log "qc_report: aggregating QC outputs from $OUTDIR"
+    multiqc "$OUTDIR" \
+        -o "$report_dir" \
+        --force \
+        -x "$report_dir" \
+        > "$report_dir/multiqc.log" 2>&1 \
+        || { log "multiqc failed"; return 1; }
+
+    [[ -s "$report_dir/multiqc_report.html" ]] \
+        || { log "qc_report: multiqc did not produce multiqc_report.html"; return 1; }
+
+    log "stage 8: qc_report complete - report at $report_dir/multiqc_report.html"
+}
 stage_publish()     { log "stage 9 (publish): TODO - tidy TSVs + manifest.json"; }
 
 mkdir -p "$OUTDIR"
