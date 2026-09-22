@@ -424,7 +424,61 @@ stage_quantify() {
 
     log "stage 5: quantify complete for ${#SAMPLE_IDS[@]} sample(s)"
 }
-stage_merge()       { log "stage 6 (merge): TODO - GenomicsDBImport + GenotypeGVCFs"; }
+stage_merge() {
+    log "stage 6 (merge): joint genotyping across the cohort (GenomicsDBImport + GenotypeGVCFs)"
+    command -v gatk >/dev/null 2>&1 || { log "gatk not found on PATH"; return 1; }
+
+    if [[ -z "${REFERENCE_FASTA:-}" ]]; then
+        log "REFERENCE_FASTA is not set (check conf/pipeline.env)"; return 1
+    fi
+    if [[ ! -f "$REFERENCE_FASTA" ]]; then
+        log "reference FASTA not found: $REFERENCE_FASTA"; return 1
+    fi
+    if [[ -z "${CALL_REGION:-}" ]]; then
+        log "CALL_REGION is not set (check conf/pipeline.env)"; return 1
+    fi
+
+    read_samples
+    local merge_dir="$OUTDIR/merge"
+    mkdir -p "$merge_dir"
+
+    local map_file="$merge_dir/sample_map.tsv"
+    : > "$map_file"
+
+    local i
+    for i in "${!SAMPLE_IDS[@]}"; do
+        local sample_id="${SAMPLE_IDS[$i]}"
+        local gvcf="$OUTDIR/quantify/$sample_id/${sample_id}.g.vcf.gz"
+        [[ -s "$gvcf" ]] \
+            || { log "merge: no GVCF for sample '$sample_id' (expected $gvcf - run stage quantify first)"; return 1; }
+        printf '%s\t%s\n' "$sample_id" "$gvcf" >> "$map_file"
+    done
+
+    local db_dir="$merge_dir/genomicsdb"
+    rm -rf "$db_dir"   # GenomicsDBImport refuses to write into an existing workspace
+
+    log "merge: importing ${#SAMPLE_IDS[@]} sample(s) into GenomicsDB"
+    gatk GenomicsDBImport \
+        --sample-name-map "$map_file" \
+        --genomicsdb-workspace-path "$db_dir" \
+        --intervals "$CALL_REGION" \
+        > "$merge_dir/genomicsdbimport.log" 2>&1 \
+        || { log "gatk GenomicsDBImport failed"; return 1; }
+
+    local cohort_vcf="$merge_dir/cohort.vcf.gz"
+    log "merge: joint genotyping across the cohort"
+    gatk GenotypeGVCFs \
+        -R "$REFERENCE_FASTA" \
+        -V "gendb://$db_dir" \
+        -O "$cohort_vcf" \
+        -L "$CALL_REGION" \
+        > "$merge_dir/genotypegvcfs.log" 2>&1 \
+        || { log "gatk GenotypeGVCFs failed"; return 1; }
+
+    [[ -s "$cohort_vcf" ]] || { log "merge produced an empty cohort VCF"; return 1; }
+
+    log "stage 6: merge complete - cohort VCF at $cohort_vcf"
+}
 stage_analyze()     { log "stage 7 (analyze): TODO - VariantFiltration + annotate"; }
 stage_qc_report()   { log "stage 8 (qc_report): TODO - MultiQC across the cohort"; }
 stage_publish()     { log "stage 9 (publish): TODO - tidy TSVs + manifest.json"; }
