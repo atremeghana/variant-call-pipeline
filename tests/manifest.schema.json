@@ -1,0 +1,256 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://binf6610.northeastern.edu/contracts/manifest.schema.json",
+  "title": "BINF6610 pipeline run manifest",
+  "description": "Emitted by stage 9 (`publish`) by EVERY implementation in EVERY module. This is the contract boundary: Modules 9 and 10 consume only this and results/db/*.tsv. See pipelines/SPEC.md section 6.",
+  "type": "object",
+  "required": [
+    "pipeline",
+    "platform",
+    "reference",
+    "samples",
+    "outputs",
+    "metrics"
+  ],
+  "properties": {
+    "pipeline": {
+      "type": "object",
+      "required": [
+        "name",
+        "version",
+        "implementation",
+        "git_sha",
+        "run_id",
+        "started_at",
+        "finished_at",
+        "exit_status"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9]*(-[a-z0-9]+)*$",
+          "description": "Pipeline identifier: lowercase, digits and single hyphens. The two course pipelines are 'rnaseq-de' and 'variant-call'. This was a closed enum of exactly those two until 2026-08-30, which made the SPEC section 8 final project impossible: every group hosts variant-call PLUS a second pipeline of its own, and that pipeline could not emit a valid manifest. REVISED the same day: the first replacement pattern required a leading LETTER, which rejected '16s-profiling' -- the natural name for one of the four verified candidate pipelines. A constraint written to unblock the deliverable had re-blocked a quarter of it. Found by emitting manifests for all four candidates instead of one."
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "SemVer. Bumped by Module 8 CI."
+        },
+        "implementation": {
+          "enum": [
+            "bash",
+            "slurm",
+            "docker",
+            "singularity",
+            "nextflow",
+            "cwl",
+            "snakemake",
+            "aws-batch",
+            "healthomics"
+          ],
+          "description": "Which module produced this run. Lets compare_runs.py prove implementations agree."
+        },
+        "git_sha": {
+          "type": "string",
+          "minLength": 7
+        },
+        "run_id": {
+          "type": "string",
+          "description": "Unique per execution, e.g. 2026-09-14T10:22:31Z-7f3a"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "finished_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "exit_status": {
+          "enum": [
+            "success",
+            "failure",
+            "partial"
+          ]
+        }
+      }
+    },
+    "platform": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "laptop",
+            "slurm",
+            "docker-local",
+            "singularity-hpc",
+            "aws-batch",
+            "aws-healthomics"
+          ]
+        },
+        "region": {
+          "type": "string"
+        },
+        "container_digests": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "description": "Tool name -> image digest. Tags are not reproducible; digests are. Required from Module 3 onward."
+        }
+      }
+    },
+    "reference": {
+      "type": "object",
+      "required": [
+        "genome"
+      ],
+      "properties": {
+        "genome": {
+          "type": "string",
+          "examples": [
+            "GRCh38.subset.chr17_19_X_Y",
+            "GRCh38.chr20:1-10000000"
+          ]
+        },
+        "annotation": {
+          "type": "string"
+        },
+        "checksums": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "samples": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "sample_id",
+          "library_type",
+          "condition"
+        ],
+        "properties": {
+          "sample_id": {
+            "type": "string"
+          },
+          "library_type": {
+            "enum": [
+              "single",
+              "paired"
+            ],
+            "description": "Book ch29 convention; must match the samplesheet."
+          },
+          "condition": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "description": "Every published artifact, with checksum. Enables Module 8 CI to assert contract conformance.",
+      "items": {
+        "type": "object",
+        "required": [
+          "stage",
+          "type",
+          "path",
+          "checksum"
+        ],
+        "properties": {
+          "stage": {
+            "enum": [
+              "validate",
+              "qc_raw",
+              "trim",
+              "align",
+              "postprocess",
+              "quantify",
+              "merge",
+              "analyze",
+              "qc_report",
+              "publish"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "examples": [
+              "counts_matrix",
+              "de_results",
+              "cohort_vcf",
+              "variant_table",
+              "multiqc"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "description": "Relative to results/"
+          },
+          "checksum": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "description": "Long format so one DB table serves both pipelines and all future final-project pipelines.",
+      "items": {
+        "type": "object",
+        "required": [
+          "metric",
+          "value",
+          "stage"
+        ],
+        "properties": {
+          "sample_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "null for cohort-level metrics"
+          },
+          "metric": {
+            "type": "string",
+            "examples": [
+              "reads_raw",
+              "reads_after_trim",
+              "pct_aligned",
+              "pct_duplicates",
+              "mean_coverage",
+              "n_variants_pass",
+              "ti_tv_ratio",
+              "n_genes_detected",
+              "n_de_genes_padj05"
+            ]
+          },
+          "value": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string",
+            "examples": [
+              "count",
+              "percent",
+              "ratio",
+              "x"
+            ]
+          },
+          "stage": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
