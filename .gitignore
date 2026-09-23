@@ -11,3 +11,12 @@ results/
 dev/
 out-dev/
 .claude/
+
+# The smoke dataset itself is 30 MB of simulated reads and a reference: it is
+# a download, not source. Unzip it here; do not commit it.
+smoke/
+
+# smoke-run/ is the exception the brief asks for: the two files from the full
+# smoke run ARE submitted, and the rules above would otherwise swallow the VCF.
+!smoke-run/
+!smoke-run/**

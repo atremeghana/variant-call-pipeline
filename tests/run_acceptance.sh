@@ -15,6 +15,11 @@
 # directory, out of a handful of synthetic reads, so the whole suite runs in
 # seconds and there is no excuse for discovering a failure at submission time.
 #
+# ONE TEST READS THE RESULT OF YOUR OWN FULL RUN. Run all ten stages on the
+# smoke dataset, copy the two files the brief names into `smoke-run/`, and the
+# smoke test scores your VCF against the variants planted in those reads. The
+# answer files it scores against are in `tests/smoke-truth/`.
+#
 # HOW YOUR PIPELINE IS INVOKED
 #
 #     ./run_pipeline.sh <samplesheet.csv> <outdir> validate
@@ -52,6 +57,7 @@ fi
 REPO=${1:-.}
 FILTER=${2:-}
 REPO=$(cd -- "${REPO}" && pwd) || { printf 'error: no such directory: %s\n' "${1:-.}" >&2; exit 66; }
+HERE=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/binf6610-accept.XXXXXX") || exit 70
 trap 'rm -rf "${WORK}"' EXIT
@@ -97,8 +103,17 @@ fq "${FQ}/Donor 3-rep1_R1.fastq.gz" 4       # a space and a hyphen, on purpose
 fq "${FQ}/Donor 3-rep1_R2.fastq.gz" 4
 
 # A real gzip stream with its tail cut off: `gzip -t` must reject it.
+# Cut to HALF the file's length, never to a fixed byte count: twenty identical
+# records compress to about 109 bytes, so any fixed cut longer than that copies
+# the whole file and leaves a fixture that is not broken at all. And check the
+# fixture before grading anyone with it — if it ever passes `gzip -t`, every
+# correct stage 0 would be marked wrong, so the harness stops instead.
 fq "${FQ}/whole.fastq.gz" 20
-head -c 120 "${FQ}/whole.fastq.gz" > "${FQ}/cut_R1.fastq.gz"
+head -c $(( $(wc -c < "${FQ}/whole.fastq.gz") / 2 )) "${FQ}/whole.fastq.gz" > "${FQ}/cut_R1.fastq.gz"
+if gzip -t "${FQ}/cut_R1.fastq.gz" 2>/dev/null; then
+    printf 'harness error: the truncated-gzip fixture is a valid gzip file, so it tests nothing.\n' >&2
+    exit 2
+fi
 cp "${FQ}/NA12891_R2.fastq.gz"            "${FQ}/cut_R2.fastq.gz"
 
 # The contract, and nothing else. Six columns, unquoted — the same sheet the
@@ -271,7 +286,7 @@ if want everything; then
     fi
 fi
 
-#-- 2 · 15 marks -------------------------------------------------------------
+#-- 2 · 10 marks -------------------------------------------------------------
 # A sample name with a space in it.
 if want name; then
     if ! sheet_is_read; then
@@ -322,7 +337,7 @@ if want duplicate; then
     fi
 fi
 
-#-- 5 · 10 marks -------------------------------------------------------------
+#-- 5 · 5 marks --------------------------------------------------------------
 # Single-end decided by the column, not by the name.
 if want single; then
     if ! sheet_is_read; then
@@ -340,7 +355,7 @@ if want single; then
     fi
 fi
 
-#-- 6 · 10 marks -------------------------------------------------------------
+#-- 6 · 5 marks --------------------------------------------------------------
 # set -euo pipefail, read from the code.
 if want strict; then
     without=()
@@ -365,7 +380,7 @@ if want strict; then
     fi
 fi
 
-#-- 7 · 10 marks -------------------------------------------------------------
+#-- 7 · 5 marks --------------------------------------------------------------
 # Progress to stderr, stdout left clean.
 if want stderr; then
     if ! sheet_is_read; then
@@ -416,7 +431,86 @@ if want samplesheet; then
     fi
 fi
 
-#-- 9 · 10 marks, read by a person -------------------------------------------
+#-- 9 · 20 marks -------------------------------------------------------------
+# The whole pipeline, run on the smoke dataset, found the variants planted in it.
+#
+# Every other test here runs stage 0 or reads your code. This one reads the
+# result of your own run of all ten stages: your stage-7 VCF, scored against
+# the answer files wgsim wrote when it planted the variants. A pipeline that
+# stops early has no VCF to hand in, and one that mishandles the single-end
+# sample (smoke_03) loses that sample's column.
+#
+# A planted SNV counts as found when that sample has a non-reference genotype
+# at that position, whatever the FILTER column says. Measured with the course's
+# reference solution on the instructor's 8 GB laptop: 850/850 (100 %),
+# 828/829 (99.9 %) and 798/866 (92.1 %) for the single-end sample, whose reads
+# are about 9x deep. The bar is 80 % per sample.
+SMOKE_MIN_PCT=80
+smoke_calls() {              # smoke_calls <vcf> -> "sample<TAB>pos" per non-reference genotype
+    local vcf=$1
+    { if [[ "${vcf}" == *.gz ]]; then gzip -dc "${vcf}"; else cat "${vcf}"; fi; } 2>/dev/null \
+    | awk -F'\t' '
+        /^##/     { next }
+        /^#CHROM/ { for (i = 10; i <= NF; i++) name[i] = $i; next }
+        {
+            n = split($9, fmt, ":"); g = 0
+            for (k = 1; k <= n; k++) if (fmt[k] == "GT") g = k
+            if (!g) next
+            for (i = 10; i <= NF; i++) {
+                split($i, f, ":")
+                if (f[g] ~ /[1-9]/) print name[i] "\t" $2
+            }
+        }'
+}
+if want smoke; then
+    SVCF=""
+    for cand in smoke-run/cohort.filtered.vcf.gz smoke-run/cohort.filtered.vcf; do
+        [[ -s "${REPO}/${cand}" ]] && { SVCF="${REPO}/${cand}"; break; }
+    done
+    SPROV=""
+    for cand in smoke-run/manifest.json smoke-run/run_info.tsv; do
+        [[ -s "${REPO}/${cand}" ]] && grep -q 'smoke' "${REPO}/${cand}" && { SPROV="${cand}"; break; }
+    done
+
+    if [[ -z "${SVCF}" ]]; then
+        no "the whole pipeline ran on the smoke dataset" \
+           "no smoke-run/cohort.filtered.vcf.gz in your repository. Run all ten stages on the
+        smoke dataset, copy your stage-7 VCF and your stage-9 manifest into smoke-run/,
+        and commit them. The brief shows the three commands."
+    else
+        calls=$(smoke_calls "${SVCF}")
+        header=$( { if [[ "${SVCF}" == *.gz ]]; then gzip -dc "${SVCF}"; else cat "${SVCF}"; fi; } 2>/dev/null \
+                  | awk -F'\t' '/^#CHROM/ { for (i = 10; i <= NF; i++) print $i; exit }')
+        problems=() found=()
+        for s in smoke_01 smoke_02 smoke_03; do
+            truth="${HERE}/smoke-truth/${s}.truth.txt"
+            if ! grep -qx "${s}" <<< "${header}"; then
+                problems+=( "the VCF has no column for ${s}" )
+                continue
+            fi
+            total=$(awk -F'\t' '$3 != "-" && $4 != "-"' "${truth}" | wc -l | tr -d ' ')
+            hits=$(awk -F'\t' -v s="${s}" 'NR == FNR { if ($1 == s) seen[$2] = 1; next }
+                                           $3 != "-" && $4 != "-" && ($2 in seen)' \
+                       <(printf '%s\n' "${calls}") "${truth}" | wc -l | tr -d ' ')
+            pct=$(( total > 0 ? 100 * hits / total : 0 ))
+            found+=( "${s} ${hits}/${total} (${pct} %)" )
+            (( pct >= SMOKE_MIN_PCT )) || problems+=( "${s} found ${hits} of ${total} planted SNVs (${pct} %)" )
+        done
+        [[ -n "${SPROV}" ]] || problems+=( "no smoke-run/manifest.json that names the smoke reference" )
+
+        if (( ${#problems[@]} == 0 )); then
+            ok "the whole pipeline ran on the smoke dataset"
+            note "planted SNVs found: ${found[*]}"
+        else
+            no "the whole pipeline ran on the smoke dataset" \
+               "a VCF is there, so the run finished: partial credit. Still wrong: $(IFS=';'; printf '%s' "${problems[*]}").
+        The bar is ${SMOKE_MIN_PCT} % of each sample's planted SNVs. A missing column usually means the
+        read group's SM is not the sample_id, or the single-end sample never reached the VCF."
+        fi
+    fi
+fi
+
+#-- 10 · 10 marks, read by a person ------------------------------------------
 if want troubleshooting; then
     tfile=""
     for cand in TROUBLESHOOTING.md troubleshooting.md docs/TROUBLESHOOTING.md; do

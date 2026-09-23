@@ -1,0 +1,21 @@
+{
+  "pipeline": {
+    "name": "variant-call",
+    "version": "1.0.0",
+    "implementation": "bash",
+    "git_sha": "d2fee9366a8317915c3b7a44c8e087a01e595dd5-dirty",
+    "run_id": "2026-09-23T15:48:07Z-32f9",
+    "started_at": "2026-09-23T15:45:45Z",
+    "finished_at": "2026-09-23T15:48:07Z",
+    "exit_status": "success"
+  },
+  "platform": {
+    "kind": "laptop"
+  },
+  "reference": {
+    "genome": "smoke.smoke_1mb"
+  },
+  "samples": [{"sample_id":"smoke_01","library_type":"paired","condition":"unaffected"},{"sample_id":"smoke_02","library_type":"paired","condition":"affected"},{"sample_id":"smoke_03","library_type":"single","condition":"affected"}],
+  "outputs": [{"stage":"align","type":"bam","path":"align/smoke_01/smoke_01.bam","checksum":"sha256:02824d2e5441dbe3190c4db5b4833db58215a6248492e772628c1f56b0d9ad3c"},{"stage":"postprocess","type":"bam","path":"postprocess/smoke_01/smoke_01.dedup.bam","checksum":"sha256:d9f1940cffb684e839250ed9f4048eb66d9512ec7ab0651fbdcf22f69e9b7afe"},{"stage":"quantify","type":"gvcf","path":"quantify/smoke_01/smoke_01.g.vcf.gz","checksum":"sha256:99d9467b5ac069a06a65dd8dc9598320da37397fd9c32ad7257ea932c115305d"},{"stage":"align","type":"bam","path":"align/smoke_02/smoke_02.bam","checksum":"sha256:5ccc7f0b8bf1da166dcbab46a2738f1bfa186503d1ce0821340f9640b994fa96"},{"stage":"postprocess","type":"bam","path":"postprocess/smoke_02/smoke_02.dedup.bam","checksum":"sha256:a8447d43f2a34bb959bfe6adda741bf416faaf1bd3dadbba4073aca8e38d7b40"},{"stage":"quantify","type":"gvcf","path":"quantify/smoke_02/smoke_02.g.vcf.gz","checksum":"sha256:a831016f1e40f54b4a0eb022ca5a2ab1585e4714a2076d1316aa0317acc4ed56"},{"stage":"align","type":"bam","path":"align/smoke_03/smoke_03.bam","checksum":"sha256:094c14846795b5d9b5d1c7653208c4e1974b42a7a5657b8085215684a8402e23"},{"stage":"postprocess","type":"bam","path":"postprocess/smoke_03/smoke_03.dedup.bam","checksum":"sha256:44d3328538e97478b1eb313d677d02639f553ee7dbf76e912a9133d472084854"},{"stage":"quantify","type":"gvcf","path":"quantify/smoke_03/smoke_03.g.vcf.gz","checksum":"sha256:590c3ccc634cd43c0b73fd3f8275d880739d83f8bfc2d0e54bf1d037727b4e3a"},{"stage":"merge","type":"cohort_vcf","path":"merge/cohort.vcf.gz","checksum":"sha256:51c4cda0512be06522d9fba97832995c19c66645cf69ee4fa18806b4e1bce4c2"},{"stage":"analyze","type":"cohort_vcf","path":"analyze/cohort.filtered.vcf.gz","checksum":"sha256:9da5eedccaed632b12f7dead590048e876478bc8a6fd94f47e0e65eef7f120eb"},{"stage":"qc_report","type":"multiqc","path":"qc_report/multiqc_report.html","checksum":"sha256:07d9846092000c4bfd663454926df57fdd6ff5fb0a6ef0be4f59921c2b230cb0"}],
+  "metrics": [{"sample_id":"smoke_01","metric":"reads_raw","value":100000,"unit":"count","stage":"qc_raw"},{"sample_id":"smoke_02","metric":"reads_raw","value":100000,"unit":"count","stage":"qc_raw"},{"sample_id":"smoke_03","metric":"reads_raw","value":60000,"unit":"count","stage":"qc_raw"},{"sample_id":null,"metric":"n_variants_pass","value":2920,"unit":"count","stage":"analyze"}]
+}

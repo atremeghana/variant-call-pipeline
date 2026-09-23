@@ -31,9 +31,33 @@ SCRIPT_DIR="$REPO_ROOT"
 # the cluster: the batch script exports THREADS from the scheduler's CPU
 # allocation, and a blind `source` would silently overwrite it with the file's
 # laptop default.
+#
+# REF and REGION are the short names the assignment brief puts on the command
+# line for the smoke run:
+#
+#     REF=$PWD/smoke.fa REGION=smoke_1mb bash run_pipeline.sh samplesheet.csv out
+#
+# REFERENCE_FASTA and CALL_REGION are the names every stage below reads, and
+# the names conf/pipeline.env has always used. They are the same two values
+# under two names, so both spellings are accepted from both places and
+# collapsed into the canonical pair here, once, before any stage runs. No stage
+# ever sees REF or REGION.
+#
+# Precedence, highest first:
+#   1. REF / REGION                   in the environment   (the brief's form)
+#   2. REFERENCE_FASTA / CALL_REGION  in the environment
+#   3. REF / REGION                   in conf/pipeline.env
+#   4. REFERENCE_FASTA / CALL_REGION  in conf/pipeline.env
+_env_ref="${REF:-}"
+_env_region="${REGION:-}"
 _env_reference_fasta="${REFERENCE_FASTA:-}"
 _env_call_region="${CALL_REGION:-}"
 _env_threads="${THREADS:-}"
+
+# Cleared so that a REF the FILE sets can be told apart from a REF the CALLER
+# set - without this, step 3 below could not distinguish them and the file
+# would appear to outrank the environment.
+unset REF REGION
 
 CONF_FILE="$REPO_ROOT/conf/pipeline.env"
 if [[ -f "$CONF_FILE" ]]; then
@@ -41,10 +65,28 @@ if [[ -f "$CONF_FILE" ]]; then
     source "$CONF_FILE"
 fi
 
+# 3: the file's short names, but only to fill a gap its canonical names left.
+[[ -z "${REFERENCE_FASTA:-}" && -n "${REF:-}"    ]] && REFERENCE_FASTA="$REF"
+[[ -z "${CALL_REGION:-}"     && -n "${REGION:-}" ]] && CALL_REGION="$REGION"
+
+# 2 then 1: the environment beats the file, and REF beats REFERENCE_FASTA.
 [[ -n "$_env_reference_fasta" ]] && REFERENCE_FASTA="$_env_reference_fasta"
 [[ -n "$_env_call_region"     ]] && CALL_REGION="$_env_call_region"
+[[ -n "$_env_ref"             ]] && REFERENCE_FASTA="$_env_ref"
+[[ -n "$_env_region"          ]] && CALL_REGION="$_env_region"
 [[ -n "$_env_threads"         ]] && THREADS="$_env_threads"
-unset _env_reference_fasta _env_call_region _env_threads
+
+# Two names for one value, set to two different things, is a mistake worth a
+# word rather than a silent winner - the run would otherwise use a reference
+# the caller can see no trace of.
+if [[ -n "$_env_ref" && -n "$_env_reference_fasta" && "$_env_ref" != "$_env_reference_fasta" ]]; then
+    echo "warning: both REF and REFERENCE_FASTA are set and differ; using REF=$_env_ref" >&2
+fi
+if [[ -n "$_env_region" && -n "$_env_call_region" && "$_env_region" != "$_env_call_region" ]]; then
+    echo "warning: both REGION and CALL_REGION are set and differ; using REGION=$_env_region" >&2
+fi
+
+unset _env_ref _env_region _env_reference_fasta _env_call_region _env_threads
 
 # The full pipeline, in order, and the two halves the cluster splits it into.
 STAGES=(validate qc_raw trim align postprocess quantify merge analyze qc_report publish)
@@ -687,7 +729,15 @@ stage_publish() {
     started_at="${PIPELINE_STARTED_AT:-$finished_at}"
     platform_kind="laptop"
     [[ -n "${SLURM_JOB_ID:-}" ]] && platform_kind="slurm"
-    genome_desc="GRCh38.${CALL_REGION:-unknown}"
+    # Name the reference this run actually used, not a hardcoded "GRCh38" -
+    # the smoke run's reference is smoke.fa, and a manifest that called it
+    # GRCh38 would be recording a genome the run never touched.
+    local ref_desc="unknown"
+    if [[ -n "${REFERENCE_FASTA:-}" ]]; then
+        ref_desc="$(basename -- "$REFERENCE_FASTA")"
+        ref_desc="${ref_desc%.fa}"; ref_desc="${ref_desc%.fasta}"; ref_desc="${ref_desc%.fna}"
+    fi
+    genome_desc="${ref_desc}.${CALL_REGION:-unknown}"
 
     json_escape() {
         local s=$1
