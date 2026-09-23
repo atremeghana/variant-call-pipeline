@@ -1,14 +1,7 @@
 # Troubleshooting Log
 
-Write entries here as you go — symptom, evidence, cause, fix.
-This cannot be reconstructed afterward, so add to it the moment something breaks.
-
-## Entry template
-
-**Symptom:**
-**Evidence:**
-**Cause:**
-**Fix:**
+Written as I went — symptom, the evidence that located the cause, the cause, the fix.
+This cannot be reconstructed afterward, so entries went in the moment something broke.
 
 ## Entry: CUTGZIP acceptance test fails — fixture, not code
 
@@ -55,6 +48,49 @@ record counts and report a mismatch naming the sample. Suite went from 7/9 to **
 cost: stage 0 already fully decompresses every FASTQ via `gzip -t`, so counting records is the
 same order of work, not a new one — on real GB-scale inputs the two passes should be folded into
 one (`n=$(zcat f | wc -l)` under `pipefail` yields validity *and* the count).
+
+**Resolution (23 Sep 2026) — the fixture bug is officially fixed, and the reason this test passes
+has changed.** The corrected `w01-assignment-tests.zip` replaces the fixed 120-byte cut with
+`head -c $(( $(wc -c < whole.fastq.gz) / 2 ))`, and adds a self-check that aborts the entire suite
+if the "truncated" fixture ever passes `gzip -t` — the harness now refuses to grade anyone against
+a fixture that tests nothing. Rebuilt it by hand to confirm: `whole.fastq.gz` is still 109 bytes,
+the cut is now 54, and `gzip -t` fails on it as it should. So the claim above that the mate-count
+check is what "clears both failing tests" was true of the old harness and is **no longer true of
+this one**: stage 0 now catches CUTGZIP on the plain `gzip -t` branch, reporting `sample 'CUTGZIP':
+r1_fastq is truncated or corrupt`. The mate-count check does not even fire, which is correct —
+`pipefail` makes `zcat` fail on the corrupt stream, `n1` comes back empty, and the comparison is
+skipped rather than inventing a second complaint about a file that could not be read at all. The
+check stays on its own merits: `shortmate_R1` (5 records) and `shortmate_R2` (4) are *still* built
+at `tests/run_acceptance.sh:100-101` and *still* referenced by no test, and mates that are out of
+sync remain a real defect `gzip -t` cannot see. What I would keep from the whole episode: "the
+fixture is broken" and "there is nothing here for my code to detect" are two different claims, and
+establishing the first does not establish the second. I stopped at the first and called it done.
+
+## Entry: .gitignore would have silently dropped the one file the assignment asks for
+
+**Symptom:** None locally — that is the entire problem. `bash tests/run_acceptance.sh .` reported
+10/10 in my working copy, including the 20-mark smoke test, and `git status` showed a clean tree.
+A grader cloning the repo would instead have scored 10/20 on that test, against the message "no
+`smoke-run/cohort.filtered.vcf.gz` in your repository."
+
+**Evidence:** `.gitignore` carried a blanket `*.vcf.gz`, added early so cohort VCFs could never be
+committed. The required deliverable `smoke-run/cohort.filtered.vcf.gz` matches that pattern.
+`git add --dry-run smoke-run/` printed nothing for the VCF, and `git check-ignore -v
+smoke-run/cohort.filtered.vcf.gz` named the exact rule doing it. The suite kept passing throughout
+because it reads `smoke-run/` off the filesystem, not out of git: to a test that just opens the
+path, an untracked file on disk is indistinguishable from a committed one.
+
+**Cause:** A gitignore rule written for one purpose — never commit cohort VCFs — silently swallowed
+a file the brief explicitly requires. No test could have caught it, because every test ran in a
+working copy where the file was present but untracked.
+
+**Fix:** Added `!smoke-run/` and `!smoke-run/**` after the blanket rules, exempting the one
+directory the brief names. Verified twice, and the second one is the one that counts: first with
+`git add --dry-run smoke-run/`, which now lists both files, and then by cloning the *pushed* repo
+into a separate directory and running the suite from there — 10/10, with `cohort.filtered.vcf.gz`
+(170,732 bytes) and `manifest.json` (3,001 bytes) genuinely present. Running the tests in the
+directory where the work happened proves much less than it appears to. The fresh clone is the
+real check, and it is cheap.
 
 ## Entry: harness detected --flags interface even though the driver is positional
 
