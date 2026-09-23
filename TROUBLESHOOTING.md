@@ -37,6 +37,25 @@ re-graded against a corrected harness.
 actually corrupt on this system. Per the TA's instruction, left both `run_pipeline.sh` and
 `tests/run_acceptance.sh` unchanged.
 
+**Follow-up (22 Sep 2026) — the conclusion above was incomplete, and the test was passable after
+all.** Everything measured above still holds: `whole.fastq.gz` really is 109 bytes, `head -c 120`
+really does copy it whole, `cmp` confirms the "cut" file is byte-identical to the original, and
+`gzip -t` is right to exit 0 on it. What I got wrong was the inference — "individually valid gzip"
+is not the same as "nothing to detect." The CUT sheet pairs `cut_R1.fastq.gz` (**20 records**, the
+whole 20-record `whole.fastq.gz`) against `cut_R2.fastq.gz` (**4 records**, a copy of
+`NA12891_R2.fastq.gz`) on a row declaring `library_type=paired`. Each file is a valid gzip stream;
+as a *pair* they are broken, and mates whose record counts disagree are a genuine defect no
+aligner can consume correctly. The same two files back the `CUTGZIP` row in the MANY sheet, so one
+check clears both failing tests. Two things confirm this is the intended solution rather than a
+loophole: the harness builds `shortmate_R1` (5 records) and `shortmate_R2` (4 records) fixtures at
+`tests/run_acceptance.sh:94-95`, commented "one mate short", which **no test ever references** —
+a mate-count check the reference solution evidently has and the shipped suite forgot to exercise
+directly. Added that check to `stage_validate`: for any row where both mates are present, compare
+record counts and report a mismatch naming the sample. Suite went from 7/9 to **9/9**. Note on
+cost: stage 0 already fully decompresses every FASTQ via `gzip -t`, so counting records is the
+same order of work, not a new one — on real GB-scale inputs the two passes should be folded into
+one (`n=$(zcat f | wc -l)` under `pipefail` yields validity *and* the count).
+
 ## Entry: harness detected --flags interface even though the driver is positional
 
 **Symptom:** `bash tests/run_acceptance.sh .` printed "driver called as:

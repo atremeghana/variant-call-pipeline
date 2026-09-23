@@ -9,3 +9,6 @@ results/
 *.fa
 *.fa.fai
 dev/
+out-dev/
+tests/
+.claude/

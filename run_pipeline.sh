@@ -33,6 +33,22 @@ fi
 
 STAGES=(validate qc_raw trim align postprocess quantify merge analyze qc_report publish)
 
+# An unrecognized stage name never matches the main loop's break condition, so
+# without this guard a typo ('validat') silently runs the ENTIRE pipeline -
+# hours of alignment instead of an error in the first second.
+stage_is_known=0
+for s in "${STAGES[@]}"; do
+    if [[ "$s" == "$LAST_STAGE" ]]; then
+        stage_is_known=1
+        break
+    fi
+done
+if (( ! stage_is_known )); then
+    echo "$0: unknown stage '$LAST_STAGE'" >&2
+    echo "       valid stages: ${STAGES[*]}" >&2
+    exit 1
+fi
+
 log() {
     # progress messages go to stderr; stdout stays clean for data
     echo "[$(date -u +%FT%TZ)] $*" >&2
@@ -135,6 +151,20 @@ stage_validate() {
                 errors+=("sample '$sample_id': r2_fastq not found: $r2")
             elif [[ "$r2" == *.gz ]] && ! gzip -t -- "$r2" 2>/dev/null; then
                 errors+=("sample '$sample_id': r2_fastq is truncated or corrupt: $r2")
+            fi
+        fi
+
+        # Mates must carry the same number of records. Each file can be a
+        # perfectly valid gzip stream and the pair still be broken - losing the
+        # tail of R1 during a copy leaves exactly this signature, and gzip -t
+        # has nothing to complain about. Every aligner downstream will happily
+        # produce garbage from mates that are out of sync.
+        if [[ -n "$r1" && -n "$r2" && -f "$r1" && -f "$r2" ]]; then
+            local n1 n2
+            n1=$(zcat -f -- "$r1" 2>/dev/null | wc -l) || n1=""
+            n2=$(zcat -f -- "$r2" 2>/dev/null | wc -l) || n2=""
+            if [[ -n "$n1" && -n "$n2" && "$n1" != "$n2" ]]; then
+                errors+=("sample '$sample_id': R1/R2 record count mismatch ($((n1 / 4)) vs $((n2 / 4)) reads) - mates are out of sync: $r1 / $r2")
             fi
         fi
     done < <(tail -n +2 -- "$SAMPLESHEET")
