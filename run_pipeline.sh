@@ -1,6 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# lib/write_manifest.sh asks for two lines in exactly this spot:
+#
+#   HERE=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+#   export RUN_STARTED=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+#
+# We already carry both values under our own names, so they are reconciled
+# here rather than added a second time:
+#
+#   HERE         is DRIVER_DIR below - the identical expression. stage_publish
+#                could not read it anyway: that function lives in
+#                lib/pipeline_lib.sh, which run_cohort.sh also sources, and
+#                that driver would have no HERE to offer. It uses REPO_ROOT,
+#                which the library works out for itself.
+#   RUN_STARTED  is PIPELINE_STARTED_AT, exported under the course's name by
+#                lib/pipeline_lib.sh so that all three drivers set it the same
+#                way and the two names can never drift apart.
+#
+# The timestamp is taken here, before the library is sourced, so the clock
+# starts when the driver starts rather than when the library loads.
+PIPELINE_STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
 # run_pipeline.sh <samplesheet.csv> <outdir> [last_stage]
 #
 # Positional interface (matches the acceptance harness and the week-1 demo):

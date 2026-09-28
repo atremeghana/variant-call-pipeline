@@ -19,10 +19,17 @@ set -euo pipefail
 PIPELINE_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$PIPELINE_LIB_DIR/.." && pwd)"
 
-# stage_publish reports the commit the run's code was on; that is the repo root.
-SCRIPT_DIR="$REPO_ROOT"
+# SCRIPT_DIR used to live here as a second name for REPO_ROOT, read only by the
+# hand-rolled git provenance in stage_publish. lib/write_manifest.sh works the
+# commit out from its own location instead, so nothing reads it any more.
 
 : "${PIPELINE_STARTED_AT:=$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+
+# lib/write_manifest.sh reads the start time from RUN_STARTED, and warns to
+# stderr and records the finish time instead if it is missing. Same instant,
+# second name, exported from the one place every driver passes through - so
+# run_pipeline.sh and run_cohort.sh cannot disagree about when the run began.
+export RUN_STARTED="$PIPELINE_STARTED_AT"
 
 # Pull in cluster/reference config. Safe to be missing on a laptop dev run -
 # stage 0 reports that as one complaint, not a crash.
@@ -709,151 +716,69 @@ stage_qc_report() {
 }
 
 stage_publish() {
-    log "stage 9 (publish): tidy TSVs + manifest.json"
+    log "stage 9 (publish): tidy TSVs + qc metrics + manifest.json"
 
-    local pub_dir="$OUTDIR/publish"
-    mkdir -p "$pub_dir"
-
-    # --- git provenance: the commit this run's code was on, and whether it's dirty ---
-    local git_sha="unknown"
-    if git -C "$SCRIPT_DIR" rev-parse --git-dir >/dev/null 2>&1; then
-        git_sha="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || echo unknown)"
-        if ! git -C "$SCRIPT_DIR" diff --quiet 2>/dev/null || ! git -C "$SCRIPT_DIR" diff --cached --quiet 2>/dev/null; then
-            git_sha="${git_sha}-dirty"
-        fi
-    fi
-
-    local run_id finished_at started_at platform_kind genome_desc
-    run_id="$(date -u +%Y-%m-%dT%H:%M:%SZ)-$(printf '%04x' $((RANDOM % 65536)))"
-    finished_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    started_at="${PIPELINE_STARTED_AT:-$finished_at}"
-    platform_kind="laptop"
-    [[ -n "${SLURM_JOB_ID:-}" ]] && platform_kind="slurm"
-    # Name the reference this run actually used, not a hardcoded "GRCh38" -
-    # the smoke run's reference is smoke.fa, and a manifest that called it
-    # GRCh38 would be recording a genome the run never touched.
-    local ref_desc="unknown"
-    if [[ -n "${REFERENCE_FASTA:-}" ]]; then
-        ref_desc="$(basename -- "$REFERENCE_FASTA")"
-        ref_desc="${ref_desc%.fa}"; ref_desc="${ref_desc%.fasta}"; ref_desc="${ref_desc%.fna}"
-    fi
-    genome_desc="${ref_desc}.${CALL_REGION:-unknown}"
-
-    json_escape() {
-        local s=$1
-        s=${s//\\/\\\\}
-        s=${s//\"/\\\"}
-        printf '%s' "$s"
-    }
-    checksum() {
-        local f=$1
-        if command -v sha256sum >/dev/null 2>&1; then
-            sha256sum "$f" | awk '{print $1}'
-        elif command -v shasum >/dev/null 2>&1; then
-            shasum -a 256 "$f" | awk '{print $1}'
-        else
-            printf '%064d' 0
-        fi
-    }
-
-    # read_samples() now carries condition/replicate too, so the manifest and
-    # the tidy TSV stay row-aligned with SAMPLE_IDS even when a filter is
+    # read_samples() carries condition/replicate as well as the FASTQ columns,
+    # so the tidy TSV stays row-aligned with SAMPLE_IDS even when a filter is
     # active. Parsing the sheet a second time here used to be safe only
     # because nothing filtered; it would misalign the moment one did.
     read_samples
 
-    # --- samples[] ---
-    local samples_json="" i
-    for i in "${!SAMPLE_IDS[@]}"; do
-        [[ -n "$samples_json" ]] && samples_json+=","
-        local sid lib cond
-        sid=$(json_escape "${SAMPLE_IDS[$i]}")
-        lib="paired"; [[ -z "${R2_LIST[$i]}" ]] && lib="single"
-        cond=$(json_escape "${COND_LIST[$i]:-unknown}")
-        samples_json+="{\"sample_id\":\"$sid\",\"library_type\":\"$lib\",\"condition\":\"$cond\"}"
-    done
-
-    # --- outputs[] : every artifact that actually exists, checksummed ---
-    local outputs_json=""
-    add_output() {
-        local stage=$1 type=$2 path=$3
-        [[ -s "$path" ]] || return 0
-        local rel="${path#"$OUTDIR"/}"
-        local sum; sum=$(checksum "$path")
-        [[ -n "$outputs_json" ]] && outputs_json+=","
-        outputs_json+="{\"stage\":\"$stage\",\"type\":\"$type\",\"path\":\"$(json_escape "$rel")\",\"checksum\":\"sha256:$sum\"}"
-    }
-    for i in "${!SAMPLE_IDS[@]}"; do
-        local sid="${SAMPLE_IDS[$i]}"
-        add_output "align"       "bam"  "$OUTDIR/align/$sid/${sid}.bam"
-        add_output "postprocess" "bam"  "$OUTDIR/postprocess/$sid/${sid}.dedup.bam"
-        add_output "quantify"    "gvcf" "$OUTDIR/quantify/$sid/${sid}.g.vcf.gz"
-    done
-    add_output "merge"     "cohort_vcf" "$OUTDIR/merge/cohort.vcf.gz"
-    add_output "analyze"   "cohort_vcf" "$OUTDIR/analyze/cohort.filtered.vcf.gz"
-    add_output "qc_report" "multiqc"    "$OUTDIR/qc_report/multiqc_report.html"
-
-    # --- metrics[] : long format, sample_id null for cohort-level ---
-    local metrics_json=""
-    add_metric() {
-        local sid=$1 metric=$2 value=$3 unit=$4 stage=$5
-        [[ -n "$metrics_json" ]] && metrics_json+=","
-        local sid_field="null"
-        [[ -n "$sid" ]] && sid_field="\"$(json_escape "$sid")\""
-        metrics_json+="{\"sample_id\":$sid_field,\"metric\":\"$metric\",\"value\":$value,\"unit\":\"$unit\",\"stage\":\"$stage\"}"
-    }
-    for i in "${!SAMPLE_IDS[@]}"; do
-        local sid="${SAMPLE_IDS[$i]}" r1="${R1_LIST[$i]}"
-        if [[ -f "$r1" ]]; then
-            local reads; reads=$(zcat -- "$r1" 2>/dev/null | wc -l); reads=$(( reads / 4 ))
-            add_metric "$sid" "reads_raw" "$reads" "count" "qc_raw"
-        fi
-    done
-    local filtered_vcf="$OUTDIR/analyze/cohort.filtered.vcf.gz"
-    if [[ -s "$filtered_vcf" ]]; then
-        local n_pass
-        n_pass=$(zcat -- "$filtered_vcf" 2>/dev/null | awk -F'\t' '!/^#/ && $7 == "PASS"' | wc -l)
-        add_metric "" "n_variants_pass" "$n_pass" "count" "analyze"
-    fi
-
-    # --- write manifest.json ---
-    local manifest="$pub_dir/manifest.json"
-    cat > "$manifest" <<JSON
-{
-  "pipeline": {
-    "name": "variant-call",
-    "version": "1.0.0",
-    "implementation": "bash",
-    "git_sha": "$git_sha",
-    "run_id": "$run_id",
-    "started_at": "$started_at",
-    "finished_at": "$finished_at",
-    "exit_status": "success"
-  },
-  "platform": {
-    "kind": "$platform_kind"
-  },
-  "reference": {
-    "genome": "$genome_desc"
-  },
-  "samples": [$samples_json],
-  "outputs": [$outputs_json],
-  "metrics": [$metrics_json]
-}
-JSON
-    [[ -s "$manifest" ]] || { log "publish: failed to write manifest.json"; return 1; }
-
-    # --- tidy TSVs ---
-    local tsv_dir="$pub_dir/tsv"
+    # --- tidy TSVs -----------------------------------------------------------
+    # Written BEFORE the manifest, because write_manifest.sh checksums every
+    # file it can find under OUTDIR: anything produced after it runs is simply
+    # invisible to it. It already knows a file called samples.tsv is stage
+    # "publish", type "samples", which is exactly what this is.
+    local tsv_dir="$OUTDIR/publish/tsv"
     mkdir -p "$tsv_dir"
     {
         printf 'sample_id\tcondition\treplicate\tlibrary_type\n'
+        local i lib
         for i in "${!SAMPLE_IDS[@]}"; do
-            local lib="paired"; [[ -z "${R2_LIST[$i]}" ]] && lib="single"
-            printf '%s\t%s\t%s\t%s\n' "${SAMPLE_IDS[$i]}" "${COND_LIST[$i]:-}" "${REPL_LIST[$i]:-}" "$lib"
+            lib="paired"; [[ -z "${R2_LIST[$i]}" ]] && lib="single"
+            printf '%s\t%s\t%s\t%s\n' \
+                   "${SAMPLE_IDS[$i]}" "${COND_LIST[$i]:-}" "${REPL_LIST[$i]:-}" "$lib"
         done
     } > "$tsv_dir/samples.tsv"
 
-    log "stage 9: publish complete - manifest at $manifest (git_sha=$git_sha), tidy TSVs at $tsv_dir"
+    # --- db/qc_metrics.tsv ---------------------------------------------------
+    # The same two metrics this stage has always measured, now handed over in
+    # the long format write_manifest.sh reads rather than formatted into JSON
+    # here. It looks for db/qc_metrics.tsv (then qc_metrics.tsv) under OUTDIR
+    # and turns every numeric row into one manifest metrics[] entry. An empty
+    # sample_id marks a cohort-level metric and becomes JSON null.
+    mkdir -p "$OUTDIR/db"
+    {
+        printf 'sample_id\tmetric\tvalue\tunit\tstage\n'
+        local sid r1 reads
+        for i in "${!SAMPLE_IDS[@]}"; do
+            sid="${SAMPLE_IDS[$i]}"; r1="${R1_LIST[$i]}"
+            [[ -f "$r1" ]] || continue
+            reads=$(zcat -- "$r1" 2>/dev/null | wc -l); reads=$(( reads / 4 ))
+            printf '%s\treads_raw\t%s\tcount\tqc_raw\n' "$sid" "$reads"
+        done
+        local filtered_vcf="$OUTDIR/analyze/cohort.filtered.vcf.gz" n_pass
+        if [[ -s "$filtered_vcf" ]]; then
+            n_pass=$(zcat -- "$filtered_vcf" 2>/dev/null | awk -F'\t' '!/^#/ && $7 == "PASS"' | wc -l)
+            printf '\tn_variants_pass\t%s\tcount\tanalyze\n' "$n_pass"
+        fi
+    } > "$OUTDIR/db/qc_metrics.tsv"
+
+    # --- manifest.json -------------------------------------------------------
+    # The course's script, unmodified, in place of the JSON this function used
+    # to build by hand. It writes "$OUTDIR/manifest.json" - the results
+    # directory it is handed, with no subfolder of its own - so the manifest no
+    # longer sits under publish/.
+    #
+    # REPO_ROOT rather than a HERE from the driver: run_cohort.sh runs this
+    # stage too and defines no such variable, and under set -u that would be a
+    # crash on the cluster path rather than a manifest.
+    bash "$REPO_ROOT/lib/write_manifest.sh" \
+         "$OUTDIR" "$SAMPLESHEET" "${REFERENCE_FASTA:-}" "${CALL_REGION:-}"
+
+    local manifest="$OUTDIR/manifest.json"
+    [[ -s "$manifest" ]] || { log "publish: write_manifest.sh wrote no manifest.json"; return 1; }
+
+    log "stage 9: publish complete - manifest at $manifest, tidy TSVs at $tsv_dir"
     log "NOTE: is_synthetic_phenotype is true for this whole cohort - 'condition' is a synthetic grouping factor for pipeline testing, never a real clinical finding."
 }
