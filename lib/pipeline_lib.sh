@@ -95,6 +95,71 @@ fi
 
 unset _env_ref _env_region _env_reference_fasta _env_call_region _env_threads
 
+# --- Explorer defaults, and why they are LAST ---------------------------------
+# The whole cohort run uses one reference and one region, and naming them here
+# means neither .sbatch script has to carry a path. But they are applied only
+# after all four precedence levels above have had their turn, so they can do
+# nothing except fill a gap that everything else left empty:
+#
+#   REF=$PWD/smoke.fa REGION=smoke_1mb bash run_pipeline.sh ...
+#
+# still runs against the smoke reference, because REF set in the environment is
+# level 1 and has already won by the time these two lines execute. `:-` rather
+# than `=` matters as much: conf/pipeline.env ships REFERENCE_FASTA="" (set, but
+# empty), and only `:-` treats that as the gap it plainly is.
+REFERENCE_FASTA=${REFERENCE_FASTA:-/courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa}
+CALL_REGION=${CALL_REGION:-chr20:1-10000000}
+
+# --- where relative FASTQ paths point -----------------------------------------
+# A samplesheet may store its FASTQ paths relative rather than absolute:
+# smoke/samplesheet.csv does, and says so in smoke/README.txt ("FASTQ paths are
+# relative to this folder"). Until now that only worked if you happened to be
+# standing in the right directory, which is why the brief's smoke command opens
+# with `cd smoke`. Under Slurm you are not standing there: the job's working
+# directory is $SLURM_SUBMIT_DIR, so the same sheet would resolve every path
+# against the repository root and stage 0 would report eight missing files.
+#
+# FASTQ_ROOT names the directory those relative paths hang off. Unset, it is the
+# SAMPLESHEET'S OWN directory, which is the reading smoke/README.txt documents
+# and makes `cd smoke` optional instead of required. An absolute path in the
+# sheet is never touched, so the cohort sheet and the acceptance fixtures (both
+# absolute) are unaffected either way.
+FASTQ_ROOT=${FASTQ_ROOT:-}
+
+# fastq_root -> the directory relative FASTQ paths resolve against
+fastq_root() {
+    if [[ -n "${FASTQ_ROOT:-}" ]]; then
+        printf '%s' "$FASTQ_ROOT"
+    else
+        dirname -- "$SAMPLESHEET"
+    fi
+}
+
+# root_fastq <root> <path> -> sets REPLY to <path> made absolute against <root>
+# Sets REPLY rather than printing, so that reading a sheet costs no subshell per
+# field. An empty path stays empty: that is how the sheet spells single-end.
+root_fastq() {
+    local root=$1 p=$2
+    if [[ -z "$p" || "$p" == /* ]]; then
+        REPLY="$p"
+    else
+        REPLY="$root/$p"
+    fi
+}
+
+# --- scratch space ----------------------------------------------------------
+# Both .sbatch scripts point TMPDIR at the compute node's own disk and remove
+# it from a trap. Until now nothing read it, so the two tools that spill did
+# what they do by default: samtools sort drops its temp chunks NEXT TO THE
+# OUTPUT, and GATK uses java.io.tmpdir. On Explorer "next to the output" is
+# /scratch, shared with every other job on the filesystem - eight array tasks
+# writing and deleting spill files there buys nothing and costs everyone.
+#
+# Resolved once, here, so that every stage below uses the same directory and a
+# laptop run (no TMPDIR set) still works.
+PIPE_TMPDIR="${TMPDIR:-/tmp}"
+mkdir -p "$PIPE_TMPDIR"
+
 # The full pipeline, in order, and the two halves the cluster splits it into.
 STAGES=(validate qc_raw trim align postprocess quantify merge analyze qc_report publish)
 PER_SAMPLE_STAGES=(validate qc_raw trim align postprocess quantify)
@@ -113,6 +178,65 @@ in_list() {
         [[ "$s" == "$want" ]] && return 0
     done
     return 1
+}
+
+# --- resume: the two halves of it, which only work as a pair ----------------
+#
+# Every stage that writes a file now does two things: it skips the work when
+# its output is already there, and it writes under a temporary name so that a
+# file under the REAL name is only ever a finished one.
+#
+# Neither half is safe alone. A skip-if-exists test over a tool that writes
+# straight to its final path is WORSE than no test: `scancel`, a --time
+# TIMEOUT or an OOM kill during stage 3 leaves a truncated BAM under the name
+# the next run tests for, so the rerun skips it and every stage downstream
+# quietly analyses a half-written file. That is precisely the failure mode
+# Assignment 2's deliverable 4 asks us to provoke and report on.
+#
+# The temporary name keeps the real extension (`.partial.bam`, not `.bam.tmp`):
+# GATK picks its output format from the extension and refuses to write a file
+# it cannot classify.
+#
+# partial_name <final> <marker> -> the sibling temp path for <final>
+# Inserts <marker> before the extension-bearing tail, so the tool still sees a
+# name it understands. Same directory as the final file, which is what makes
+# the later `mv` a rename within one filesystem, and so atomic.
+partial_name() {
+    local final=$1 marker=${2:-partial} dir base
+    dir=$(dirname -- "$final")
+    base=$(basename -- "$final")
+    case "$base" in
+        *.g.vcf.gz)  printf '%s/%s.%s.g.vcf.gz' "$dir" "${base%.g.vcf.gz}"  "$marker" ;;
+        *.vcf.gz)    printf '%s/%s.%s.vcf.gz'   "$dir" "${base%.vcf.gz}"    "$marker" ;;
+        *.bam)       printf '%s/%s.%s.bam'      "$dir" "${base%.bam}"       "$marker" ;;
+        *)           printf '%s.%s'             "$final" "$marker" ;;
+    esac
+}
+
+# discard_partial <path...> - remove leftovers from a killed run before reusing
+# the name. A stale .partial from last time is never trusted, only deleted.
+discard_partial() {
+    local p
+    for p in "$@"; do
+        rm -f -- "$p" "$p".tbi "$p".bai "$p".idx
+    done
+    return 0
+}
+
+# publish_atomic <partial> <final>
+# Renames the finished output into place, sidecar index FIRST and the data file
+# LAST. That order is the whole point: <final> is the name every skip-if-exists
+# guard tests, so it must be the last name to appear. A kill between the two
+# renames leaves an index with no BAM/VCF beside it, the guard sees nothing,
+# and the rerun redoes the work - which is the safe direction to fail in.
+publish_atomic() {
+    local partial=$1 final=$2 ext
+    for ext in .tbi .bai .idx; do
+        if [[ -e "${partial}${ext}" ]]; then
+            mv -f -- "${partial}${ext}" "${final}${ext}"
+        fi
+    done
+    mv -f -- "$partial" "$final"
 }
 
 # run_stage_range <last_stage> <stage...>
@@ -179,6 +303,12 @@ stage_validate() {
     local idx_r2=${col_index[r2_fastq]}
     local idx_lib=${col_index[library_type]}
 
+    # The same rooting read_samples() applies, because stage 0 parses the sheet
+    # itself and never calls it. Without this, a relative sheet would have
+    # stage 0 reporting files as missing that every later stage resolves fine.
+    local root
+    root=$(fastq_root)
+
     # --- body: check every row, collecting every problem before exiting ---
     local line_no=1
     local line
@@ -192,9 +322,10 @@ stage_validate() {
         IFS=',' read -r -a fields <<< "$line"
 
         local sample_id="${fields[$idx_sample_id]:-}"
-        local r1="${fields[$idx_r1]:-}"
-        local r2="${fields[$idx_r2]:-}"
         local lib="${fields[$idx_lib]:-}"
+        local r1 r2
+        root_fastq "$root" "${fields[$idx_r1]:-}"; r1="$REPLY"
+        root_fastq "$root" "${fields[$idx_r2]:-}"; r2="$REPLY"
 
         if [[ -z "$sample_id" ]]; then
             errors+=("row $line_no: empty sample_id")
@@ -322,6 +453,9 @@ read_samples() {
     local idx_r2="${idx[r2_fastq]:-}" idx_lib="${idx[library_type]:-}"
     local idx_cond="${idx[condition]:-}" idx_repl="${idx[replicate]:-}"
 
+    local root
+    root=$(fastq_root)
+
     local line
     while IFS= read -r line || [[ -n "$line" ]]; do
         [[ -z "$line" ]] && continue
@@ -336,8 +470,14 @@ read_samples() {
         [[ -n "$idx_cond" ]] && v_cond="${row[$idx_cond]:-}"
         [[ -n "$idx_repl" ]] && v_repl="${row[$idx_repl]:-}"
 
+        # Rooted here, once, so that no stage ever handles a relative path and
+        # none of them has to know where the sheet came from.
+        local v_r1
+        root_fastq "$root" "${row[$idx_r1]:-}"; v_r1="$REPLY"
+        root_fastq "$root" "$v_r2";            v_r2="$REPLY"
+
         SAMPLE_IDS+=("${row[$idx_id]:-}")
-        R1_LIST+=("${row[$idx_r1]:-}")
+        R1_LIST+=("$v_r1")
         R2_LIST+=("$v_r2")
         LIB_TYPES+=("$v_lib")
         COND_LIST+=("$v_cond")
@@ -476,19 +616,31 @@ stage_align() {
         mkdir -p "$sample_dir"
         local bam="$sample_dir/${sample_id}.bam"
         local rg="@RG\tID:${sample_id}\tSM:${sample_id}\tPL:ILLUMINA"
+
+        if [[ -s "$bam" ]]; then
+            log "align: $sample_id already done, skipping"
+            continue
+        fi
         log "align: $sample_id"
 
+        local bam_part
+        bam_part=$(partial_name "$bam")
+        discard_partial "$bam_part"
+
+        # `| samtools view` is only safe because pipefail is on: without it bwa
+        # could die and samtools would still exit 0 on the empty stream.
         if [[ -n "$r2" ]]; then
             bwa mem -t "$threads" -R "$rg" "$REFERENCE_FASTA" "$r1" "$r2" 2> "$sample_dir/bwa.log" \
-                | samtools view -b -o "$bam" - \
+                | samtools view -b -o "$bam_part" - \
                 || { log "bwa/samtools failed for sample '$sample_id'"; return 1; }
         else
             bwa mem -t "$threads" -R "$rg" "$REFERENCE_FASTA" "$r1" 2> "$sample_dir/bwa.log" \
-                | samtools view -b -o "$bam" - \
+                | samtools view -b -o "$bam_part" - \
                 || { log "bwa/samtools failed for sample '$sample_id'"; return 1; }
         fi
 
-        [[ -s "$bam" ]] || { log "align produced an empty BAM for sample '$sample_id'"; return 1; }
+        [[ -s "$bam_part" ]] || { log "align produced an empty BAM for sample '$sample_id'"; return 1; }
+        publish_atomic "$bam_part" "$bam"
     done
 
     log "stage 3: align complete for ${#SAMPLE_IDS[@]} sample(s)"
@@ -513,27 +665,67 @@ stage_postprocess() {
         local sorted_bam="$sample_dir/${sample_id}.sorted.bam"
         local dedup_bam="$sample_dir/${sample_id}.dedup.bam"
         local metrics="$sample_dir/${sample_id}.dup_metrics.txt"
+
+        # The stage's real product is the deduplicated BAM AND its index: every
+        # stage downstream needs both, so a rerun that found only the BAM would
+        # skip and then fail in stage 5. Test for the pair.
+        if [[ -s "$dedup_bam" && -s "${dedup_bam}.bai" ]]; then
+            log "postprocess: $sample_id already done, skipping"
+            continue
+        fi
         log "postprocess: $sample_id"
 
         [[ -s "$align_bam" ]] \
             || { log "postprocess: no aligned BAM for sample '$sample_id' (expected $align_bam - run stage align first)"; return 1; }
 
-        samtools sort -@ "$threads" -o "$sorted_bam" "$align_bam" \
-            > "$sample_dir/sort.log" 2>&1 \
-            || { log "samtools sort failed for sample '$sample_id'"; return 1; }
+        # The sort has its own guard: it is the expensive half, and a job killed
+        # during MarkDuplicates should not pay for it twice.
+        if [[ -s "$sorted_bam" ]]; then
+            log "postprocess: $sample_id sort already done, reusing"
+        else
+            local sorted_part
+            sorted_part=$(partial_name "$sorted_bam")
+            discard_partial "$sorted_part"
+            # -T keeps the spill chunks on node-local disk instead of beside the
+            # output. The sample id is in the prefix as well as $$ so that two
+            # samples sorted by the SAME process (the laptop path, where all of
+            # them run in one) cannot collide over a previous sort's leftovers.
+            samtools sort -@ "$threads" -T "$PIPE_TMPDIR/sort.${sample_id}.$$" \
+                -o "$sorted_part" "$align_bam" \
+                > "$sample_dir/sort.log" 2>&1 \
+                || { log "samtools sort failed for sample '$sample_id'"; return 1; }
+            publish_atomic "$sorted_part" "$sorted_bam"
+        fi
 
+        local dedup_part
+        dedup_part=$(partial_name "$dedup_bam")
+        discard_partial "$dedup_part"
+
+        # MarkDuplicates holds read ends in memory and spills the overflow; on
+        # this cohort that spill is the largest temp write in the pipeline.
+        #
+        # --TMP_DIR, not --tmp-dir. MarkDuplicates is one of the Picard tools
+        # GATK wraps and it keeps Picard's SHOUTING_SNAKE_CASE argument names;
+        # every other gatk call below is a GATK-engine tool and takes
+        # --tmp-dir. Measured: --tmp-dir here exits 1 with "tmp-dir is not a
+        # recognized option" after printing its entire usage, so the mistake is
+        # cheap to make and expensive to read.
         gatk MarkDuplicates \
             -I "$sorted_bam" \
-            -O "$dedup_bam" \
+            -O "$dedup_part" \
             -M "$metrics" \
+            --TMP_DIR "$PIPE_TMPDIR" \
             > "$sample_dir/markdup.log" 2>&1 \
             || { log "gatk MarkDuplicates failed for sample '$sample_id'"; return 1; }
 
-        samtools index "$dedup_bam" \
+        # Index the partial, so that the .bai is already in place beside the
+        # real name the instant the BAM gets it.
+        samtools index "$dedup_part" \
             > "$sample_dir/index.log" 2>&1 \
             || { log "samtools index failed for sample '$sample_id'"; return 1; }
 
-        [[ -s "$dedup_bam" ]] || { log "postprocess produced an empty BAM for sample '$sample_id'"; return 1; }
+        [[ -s "$dedup_part" ]] || { log "postprocess produced an empty BAM for sample '$sample_id'"; return 1; }
+        publish_atomic "$dedup_part" "$dedup_bam"
     done
 
     log "stage 4: postprocess complete for ${#SAMPLE_IDS[@]} sample(s)"
@@ -576,21 +768,34 @@ stage_quantify() {
         local sample_dir="$q_dir/$sample_id"
         mkdir -p "$sample_dir"
         local gvcf="$sample_dir/${sample_id}.g.vcf.gz"
+
+        # GVCF and .tbi both, for the same reason as the BAM above: stage 6
+        # hands GenomicsDBImport the GVCF path and it reads the index next to it.
+        if [[ -s "$gvcf" && -s "${gvcf}.tbi" ]]; then
+            log "quantify: $sample_id already done, skipping"
+            continue
+        fi
         log "quantify: $sample_id"
 
         [[ -s "$dedup_bam" ]] \
             || { log "quantify: no deduplicated BAM for sample '$sample_id' (expected $dedup_bam - run stage postprocess first)"; return 1; }
 
+        local gvcf_part
+        gvcf_part=$(partial_name "$gvcf")
+        discard_partial "$gvcf_part"
+
         gatk HaplotypeCaller \
             -R "$REFERENCE_FASTA" \
             -I "$dedup_bam" \
-            -O "$gvcf" \
+            -O "$gvcf_part" \
             -ERC GVCF \
             -L "$CALL_REGION" \
+            --tmp-dir "$PIPE_TMPDIR" \
             > "$sample_dir/haplotypecaller.log" 2>&1 \
             || { log "gatk HaplotypeCaller failed for sample '$sample_id'"; return 1; }
 
-        [[ -s "$gvcf" ]] || { log "quantify produced an empty GVCF for sample '$sample_id'"; return 1; }
+        [[ -s "$gvcf_part" ]] || { log "quantify produced an empty GVCF for sample '$sample_id'"; return 1; }
+        publish_atomic "$gvcf_part" "$gvcf"
     done
 
     log "stage 5: quantify complete for ${#SAMPLE_IDS[@]} sample(s)"
@@ -614,6 +819,17 @@ stage_merge() {
     local merge_dir="$OUTDIR/merge"
     mkdir -p "$merge_dir"
 
+    local cohort_vcf="$merge_dir/cohort.vcf.gz"
+
+    # Cohort stages guard the whole function, not a loop body: there is one
+    # output and it is all-or-nothing. Skipping here also means the `rm -rf`
+    # below is never reached on a rerun, so a finished GenomicsDB workspace is
+    # not destroyed just to rebuild the VCF that was already made from it.
+    if [[ -s "$cohort_vcf" && -s "${cohort_vcf}.tbi" ]]; then
+        log "stage 6: cohort VCF already present, skipping merge - $cohort_vcf"
+        return 0
+    fi
+
     local map_file="$merge_dir/sample_map.tsv"
     : > "$map_file"
 
@@ -626,7 +842,22 @@ stage_merge() {
         printf '%s\t%s\n' "$sample_id" "$gvcf" >> "$map_file"
     done
 
-    local db_dir="$merge_dir/genomicsdb"
+    # The workspace goes on the NODE'S disk, not under OUTDIR.
+    #
+    # GenomicsDBImport writes this folder and GenotypeGVCFs reads it straight
+    # back, and on Explorer OUTDIR is /scratch - a network mount. The course's
+    # week-2 page measured the pair of steps over these eight GVCFs at 36, 58
+    # and 96 minutes with the workspace on /scratch, against 8 minutes with it
+    # in ${TMPDIR}, for the same 36,853 records. It is the single largest
+    # difference in the whole cohort job.
+    #
+    # It is also purely intermediate: both steps that touch it run inside this
+    # one function, so nothing outside stage 6 ever needs it, and the job's
+    # trap removing ${TMPDIR} takes it away for free. A cohort job killed
+    # between the two steps loses the workspace and rebuilds it, which is
+    # correct - the guard above keys off the cohort VCF, never off the
+    # workspace, so a half-built one can never be mistaken for a finished one.
+    local db_dir="$PIPE_TMPDIR/genomicsdb"
     rm -rf "$db_dir"   # GenomicsDBImport refuses to write into an existing workspace
 
     log "merge: importing ${#SAMPLE_IDS[@]} sample(s) into GenomicsDB"
@@ -634,20 +865,26 @@ stage_merge() {
         --sample-name-map "$map_file" \
         --genomicsdb-workspace-path "$db_dir" \
         --intervals "$CALL_REGION" \
+        --tmp-dir "$PIPE_TMPDIR" \
         > "$merge_dir/genomicsdbimport.log" 2>&1 \
         || { log "gatk GenomicsDBImport failed"; return 1; }
 
-    local cohort_vcf="$merge_dir/cohort.vcf.gz"
     log "merge: joint genotyping across the cohort"
+    local cohort_part
+    cohort_part=$(partial_name "$cohort_vcf")
+    discard_partial "$cohort_part"
+
     gatk GenotypeGVCFs \
         -R "$REFERENCE_FASTA" \
         -V "gendb://$db_dir" \
-        -O "$cohort_vcf" \
+        -O "$cohort_part" \
         -L "$CALL_REGION" \
+        --tmp-dir "$PIPE_TMPDIR" \
         > "$merge_dir/genotypegvcfs.log" 2>&1 \
         || { log "gatk GenotypeGVCFs failed"; return 1; }
 
-    [[ -s "$cohort_vcf" ]] || { log "merge produced an empty cohort VCF"; return 1; }
+    [[ -s "$cohort_part" ]] || { log "merge produced an empty cohort VCF"; return 1; }
+    publish_atomic "$cohort_part" "$cohort_vcf"
 
     log "stage 6: merge complete - cohort VCF at $cohort_vcf"
 }
@@ -663,34 +900,57 @@ stage_analyze() {
         log "reference FASTA not found: $REFERENCE_FASTA"; return 1
     fi
 
-    local cohort_vcf="$OUTDIR/merge/cohort.vcf.gz"
-    [[ -s "$cohort_vcf" ]] \
-        || { log "analyze: no cohort VCF found (expected $cohort_vcf - run stage merge first)"; return 1; }
-
     local analyze_dir="$OUTDIR/analyze"
     mkdir -p "$analyze_dir"
     local filtered_vcf="$analyze_dir/cohort.filtered.vcf.gz"
+
+    # Guarded before the input check on purpose: if this stage's own output is
+    # already complete there is nothing to say about stage 6's, and a rerun
+    # should not fail over an input it no longer needs.
+    if [[ -s "$filtered_vcf" && -s "${filtered_vcf}.tbi" ]]; then
+        log "stage 7: filtered cohort VCF already present, skipping analyze - $filtered_vcf"
+        _analyze_synthetic_note
+        return 0
+    fi
+
+    local cohort_vcf="$OUTDIR/merge/cohort.vcf.gz"
+    [[ -s "$cohort_vcf" ]] \
+        || { log "analyze: no cohort VCF found (expected $cohort_vcf - run stage merge first)"; return 1; }
 
     # Standard GATK germline hard-filter thresholds, applied as one combined
     # pass rather than the usual separate SNP/indel split - a reasonable
     # simplification at this scale (10Mb, 8 samples).
     log "analyze: applying hard filters"
+    local filtered_part
+    filtered_part=$(partial_name "$filtered_vcf")
+    discard_partial "$filtered_part"
+
     gatk VariantFiltration \
         -R "$REFERENCE_FASTA" \
         -V "$cohort_vcf" \
-        -O "$filtered_vcf" \
+        -O "$filtered_part" \
         --filter-expression "QD < 2.0"             --filter-name "QD2" \
         --filter-expression "FS > 60.0"             --filter-name "FS60" \
         --filter-expression "MQ < 40.0"             --filter-name "MQ40" \
         --filter-expression "MQRankSum < -12.5"     --filter-name "MQRankSum-12.5" \
         --filter-expression "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8" \
         --filter-expression "SOR > 3.0"             --filter-name "SOR3" \
+        --tmp-dir "$PIPE_TMPDIR" \
         > "$analyze_dir/variantfiltration.log" 2>&1 \
         || { log "gatk VariantFiltration failed"; return 1; }
 
-    [[ -s "$filtered_vcf" ]] || { log "analyze produced an empty filtered VCF"; return 1; }
+    [[ -s "$filtered_part" ]] || { log "analyze produced an empty filtered VCF"; return 1; }
+    publish_atomic "$filtered_part" "$filtered_vcf"
 
     log "stage 7: analyze complete - filtered/annotated cohort VCF at $filtered_vcf"
+    _analyze_synthetic_note
+}
+
+# Said on every path through stage 7, including the one that skips the work.
+# A resumed run produces the same VCF as a fresh one and so owes the reader the
+# same warning about what 'condition' in it actually is; losing the caveat
+# because the file happened to be cached already is exactly the wrong failure.
+_analyze_synthetic_note() {
     log "NOTE: is_synthetic_phenotype is true for every sample in this cohort. 'condition' is a synthetic grouping factor for pipeline testing only, never a real clinical finding - carry this forward into any downstream report."
 }
 
