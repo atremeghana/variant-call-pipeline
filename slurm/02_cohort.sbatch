@@ -6,32 +6,56 @@
 #SBATCH --output=logs/cohort_%j.out
 #SBATCH --error=logs/cohort_%j.err
 #SBATCH --export=NONE
-set -euo pipefail
-
-# Stages 6-9, once, over every sample. Submitted by submit.sh with
-# --dependency=afterok on the array, so by the time this starts every
-# per-sample task has succeeded and the shared outdir is complete.
+#-----------------------------------------------------------------------------
+# Stages 6-9, once, over every sample. submit.sh submits this with
+# --dependency=afterok on the array, so by the time it starts every per-sample
+# task has SUCCEEDED and the shared outdir is complete.
+#
+# afterok and not afterany: a failed sample under afterany would give you a
+# joint-called cohort quietly missing a column, which is worse than no cohort.
+#
+# No --array here and no sample id: this job is the whole cohort by design, and
+# run_cohort.sh clears ONLY_SAMPLE_ID itself so an inherited filter cannot
+# shrink it.
 #
 # Same rule as the array script: this file schedules, it does not analyse. The
 # only thing it executes is run_cohort.sh.
 #
-# No --array here, and no sample id: this job is the whole cohort by design.
+# The resource numbers above are DEFAULTS AND GUESSES, overridden by submit.sh
+# from slurm/conf/slurm.env. Neither set is measured yet - see RESOURCES.md.
+#-----------------------------------------------------------------------------
+set -euo pipefail
 
-cd "$SLURM_SUBMIT_DIR"
+# See 01_persample.sbatch for why this is $SLURM_SUBMIT_DIR and not
+# $(dirname "$0"), and why the file is tested for rather than just sourced.
+if [[ ! -s "${SLURM_SUBMIT_DIR}/conf/slurm.env" ]]; then
+    printf 'no conf/slurm.env in %s\n' "${SLURM_SUBMIT_DIR}" >&2
+    printf 'submit from the slurm/ directory, or use: bash submit.sh\n' >&2
+    exit 78            # EX_CONFIG
+fi
+# shellcheck source=conf/slurm.env
+source "${SLURM_SUBMIT_DIR}/conf/slurm.env"
 
+cd "${SLURM_SUBMIT_DIR}"
 mkdir -p logs
 
-source slurm/conf/slurm.env
+module load miniconda3/25.9.1
+source activate "${CONDA_ENV}"
 
-SAMPLESHEET="${SLURM_SUBMIT_DIR}/${SAMPLESHEET_FILE}"
-OUTDIR="${SLURM_SUBMIT_DIR}/${PIPELINE_OUTDIR}"
+export THREADS="${SLURM_CPUS_PER_TASK}"
 
-export THREADS="$SLURM_CPUS_PER_TASK"
+export TMPDIR="/tmp/${SLURM_JOB_ID}"
+mkdir -p "${TMPDIR}"
+trap 'rm -rf "${TMPDIR}"' EXIT
 
-export TMPDIR="/tmp/${SLURM_JOB_ID}_cohort"
-mkdir -p "$TMPDIR"
-trap 'rm -rf "$TMPDIR"' EXIT
+printf 'cohort job %s on %s: cores=%s tmpdir=%s\n' \
+       "${SLURM_JOB_ID}" "$(hostname)" "${SLURM_CPUS_PER_TASK}" "${TMPDIR}" >&2
 
-echo "cohort job ${SLURM_JOB_ID}: threads=${THREADS} tmpdir=${TMPDIR}" >&2
+# Stages 6-9 only. run_cohort.sh refuses the per-sample stages by name, so this
+# job cannot be talked into re-running eight samples serially in one allocation.
+bash "${PIPELINE_DIR}/run_cohort.sh" \
+     "${SAMPLESHEET}" "${RUN_ROOT}/run" publish
 
-bash ./run_cohort.sh "$SAMPLESHEET" "$OUTDIR"
+printf 'cohort complete: %s\n' "${RUN_ROOT}/run" >&2
+printf 'NOTE: %s is on /scratch and will be purged. Copy results/ and\n' "${RUN_ROOT}" >&2
+printf '      manifest.json somewhere durable before that happens.\n' >&2
