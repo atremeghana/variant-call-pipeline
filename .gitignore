@@ -16,7 +16,19 @@ out-dev/
 # a download, not source. Unzip it here; do not commit it.
 smoke/
 
+# Slurm writes one .out and one .err per array task into the directory you
+# submitted from. They are run artefacts, not source; RESOURCES.md quotes the
+# numbers that matter out of them.
+slurm/logs/
+
 # smoke-run/ is the exception the brief asks for: the two files from the full
 # smoke run ARE submitted, and the rules above would otherwise swallow the VCF.
 !smoke-run/
 !smoke-run/**
+
+# cluster-run/ is week 2's equivalent: the cohort job's filtered VCF and its
+# manifest are submitted, and *.vcf.gz above would otherwise swallow the VCF
+# silently - `git add -A` skips an ignored file without a word, which is how
+# you discover at the deadline that the 20-mark deliverable was never committed.
+!cluster-run/
+!cluster-run/**

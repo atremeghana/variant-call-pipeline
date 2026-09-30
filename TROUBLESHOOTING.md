@@ -3,6 +3,16 @@
 Written as I went — symptom, the evidence that located the cause, the cause, the fix.
 This cannot be reconstructed afterward, so entries went in the moment something broke.
 
+**Two parts.** [Part 1](#part-1--assignment-1-things-that-broke-by-themselves) is Assignment 1: things
+that broke on their own while the pipeline was being written. [Part 2](#part-2--assignment-2-four-failures-caused-on-purpose)
+is Assignment 2's four deliberate failures on Explorer. They are in one file because both
+assignments' acceptance suites read `TROUBLESHOOTING.md` at the top level and take the first one
+they find, so a second file under another name would be graded as an absent one.
+
+---
+
+# Part 1 · Assignment 1, things that broke by themselves
+
 ## Entry: CUTGZIP acceptance test fails — fixture, not code
 
 **Symptom:** `bash tests/run_acceptance.sh .` reports "catches a truncated .fastq.gz in stage 0"
@@ -141,3 +151,157 @@ column to `condition`), and added a genuinely missing check while I was in there
 previously an empty r2 was always silently accepted as single-end regardless of what
 `library_type` claimed. Re-ran the suite: 7/9, with the remaining 2 failures traced to an
 unrelated, TA-confirmed bug in the harness's own truncated-gzip fixture (see entry above).
+
+---
+
+# Part 2 · Assignment 2, four failures caused on purpose
+
+> **STATUS: SCAFFOLD. Three of the four have not been run on Explorer yet.**
+>
+> The cohort data is small enough that nothing fails by itself, so each failure below has to be
+> provoked deliberately: one submission each, under five minutes each. The headings, the breakage
+> command and the expected shape are written out ready. **Every `sacct` block marked
+> `[not yet run]` is a placeholder — no State, Reason, Elapsed or ExitCode below has been observed
+> on Explorer.** Failure 4 is the exception: it has real evidence, but from a *local* reproduction,
+> and it is labelled as such.
+>
+> If a breakage produces something other than the failure expected here, write down what happened
+> instead and why. That counts in full — e.g. a trimming step can finish before `scancel` lands, in
+> which case nothing was cancelled mid-write and that is the finding.
+
+## Failure 1 · `--time` too short → TIMEOUT
+
+**Break it:**
+```bash
+cd slurm
+sbatch -p courses -A binf6610.202710 --array=1-1 --time=00:02:00 01_persample.sbatch
+```
+
+**Evidence:**
+```
+[not yet run]
+sacct -j <jobid> --format=JobID,State,Elapsed,Timelimit,ExitCode,MaxRSS
+```
+
+**Write down:** the `State` (expected `TIMEOUT`, not `FAILED`), the last line reached in
+`slurm/logs/persample_<jobid>_1.out` — which identifies the stage it died inside — and what was
+left on disk under `$RUN_ROOT/run`.
+
+**What to check specifically, because this is where our resume design gets tested:** the killed
+stage should have left a `*.partial.bam` / `*.partial.g.vcf.gz` and **no** file under the real name.
+`trap 'rm -rf "${TMPDIR}"' EXIT` should also have removed `/tmp/<jobid>` — confirm with
+`ls /tmp/<jobid>` on the node, or by its absence in the next job's log.
+
+**Expected:** `[to fill in]`  ·  **Actually happened:** `[to fill in]`
+
+## Failure 2 · a task exits 1, with the cohort job on `afterok`
+
+**Break it:** make exactly one array task fail, leaving the other seven to succeed — e.g. point one
+row's `r1_fastq` at a path that does not exist, so stage 0 refuses that sample and only that sample.
+Submit through `submit.sh` so the dependency is wired as it normally is:
+```bash
+bash slurm/submit.sh
+```
+
+**Evidence:**
+```
+[not yet run]
+sacct -j <array_jobid> --format=JobID,State,ExitCode
+sacct -j <cohort_jobid> --format=JobID,State,Reason,ExitCode
+squeue -j <cohort_jobid> -o '%i %T %r'
+```
+
+**Write down:** what happened to the cohort job and its `Reason`. Expected: the array shows seven
+`COMPLETED` and one `FAILED`; the cohort job never starts, and because `submit.sh` passes
+`--kill-on-invalid-dep=yes` it is `CANCELLED` with a `DependencyNeverSatisfied` reason rather than
+sitting in the queue forever.
+
+**Why `afterok` and not `afterany`:** under `afterany` the cohort job would have run on seven
+GVCFs and produced a joint-called VCF quietly missing a column, which is worse than no VCF.
+
+**Expected:** `[to fill in]`  ·  **Actually happened:** `[to fill in]`
+
+## Failure 3 · `--array=1-9` against an eight-row samplesheet
+
+**This is the one that can succeed while being completely wrong**, which is why the guard exists.
+
+**Break it:**
+```bash
+cd slurm
+sbatch -p courses -A binf6610.202710 --array=1-9 01_persample.sbatch
+```
+
+**Evidence:**
+```
+[not yet run]
+sacct -j <jobid> --format=JobID,State,ExitCode        # task _9 specifically
+cat logs/persample_<jobid>_9.err
+```
+
+**What task 9 did:** the awk in `01_persample.sbatch` finds no row 10 in an eight-row sheet and
+returns an empty string, so the `[[ -z "${SAMPLE}" ]]` guard fires and the task exits **64**
+(`EX_USAGE`) with `task 9: no data row 9 in <sheet>` and `the --array range is wider than the sheet
+has samples`.
+
+**What it would have done without the guard** — and this is the part worth writing up, because
+nothing would have looked wrong: `run_sample.sh` would have been handed an empty `sample_id`.
+Our `run_sample.sh` happens to refuse that too (it has its own empty-id check), but had it not,
+`read_samples()` filtering on an empty `ONLY_SAMPLE_ID` returns **every** row, so task 9 would have
+quietly processed the whole cohort a second time, single-threaded, inside one array task — and
+exited 0. Under `afterok` that is worse than a failure: nine `COMPLETED` tasks, a cohort job that
+starts happily, and no error anywhere to explain the elapsed time.
+
+**Expected:** exit 64, `State=FAILED`, `ExitCode=64:0`.  ·  **Actually happened:** `[to fill in]`
+
+## Failure 4 · `scancel` mid-write, then resubmit
+
+**Break it:**
+```bash
+bash slurm/submit.sh 1-1
+sleep 90                                  # long enough to be inside stage 3 or 4
+scancel <array_jobid>
+bash slurm/submit.sh 1-1                  # resubmit, same output directory
+```
+
+**The question being asked:** *did the rerun trust what was left behind?* It must not. A cancelled
+job leaves a half-written file, and the whole point of the guard-plus-atomic-rename pair added for
+this assignment is that such a file can never be mistaken for a finished one.
+
+**Evidence — Explorer:**
+```
+[not yet run]
+sacct -j <first_jobid>  --format=JobID,State,ExitCode    # expect CANCELLED
+sacct -j <second_jobid> --format=JobID,State,Elapsed
+ls -la $RUN_ROOT/run/align/<sample>/                     # before the resubmit
+```
+
+**Evidence — local reproduction (real, run on the smoke dataset):** the failure mode was
+reproduced on a laptop rather than waiting for the cluster, by leaving behind exactly what a
+`scancel` during stage 3 leaves: a truncated `smoke_01.partial.bam` (the first 4096 bytes of a good
+BAM) and no `smoke_01.bam`. Re-running all ten stages then showed:
+
+- the rerun logged `align: smoke_01` — it re-ran the stage rather than skipping it, so it did
+  **not** trust the partial file;
+- the leftover `.partial.bam` was gone afterwards (`discard_partial` removes a stale one before
+  reusing the name, so it is deleted rather than resumed from);
+- the rebuilt BAM was **byte-identical** to the one from the clean run, and passed
+  `samtools quickcheck`;
+- the other two samples logged `already done, skipping` and were not recomputed.
+
+A second check in the same reproduction: deleting only `smoke_01.dedup.bam.bai` and leaving the BAM
+caused `postprocess` to re-run for that sample rather than skip on the BAM alone — the guard tests
+the data file *and* its index, because stage 5 needs both. The expensive sort was reused
+(`sort already done`) while MarkDuplicates and the indexing were redone.
+
+**Why a truncated file can never appear under the real name:** each stage writes to a `.partial`
+sibling in the same directory and renames it only after the tool exits 0. A rename within one
+filesystem is atomic, and the sidecar index is renamed *before* the data file, so the name the
+guard tests for is always the last one to appear. Being killed between the two renames leaves an
+index with no data file, the guard sees nothing, and the work is redone — the safe direction.
+
+**Note on provoking this on Explorer:** with a 10 Mb call region the per-sample stages are quick,
+so `scancel` may well land after the write it was aiming at. If that happens, say so and report
+which stage had already completed — a `scancel` that arrives too late is a legitimate finding, not
+a failed attempt.
+
+**Expected:** `[to fill in from Explorer]`  ·  **Actually happened:** `[to fill in from Explorer]`
