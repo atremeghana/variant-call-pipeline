@@ -168,7 +168,6 @@ unrelated, TA-confirmed bug in the harness's own truncated-gzip fixture (see ent
 > If a breakage produces something other than the failure expected here, write down what happened
 > instead and why. That counts in full — e.g. a trimming step can finish before `scancel` lands, in
 > which case nothing was cancelled mid-write and that is the finding.
-
 ## Failure 1 · `--time` too short → TIMEOUT
 
 **Break it:**
@@ -177,50 +176,129 @@ cd slurm
 sbatch -p courses -A binf6610.202710 --array=1-1 --time=00:02:00 01_persample.sbatch
 ```
 
-**Evidence:**
+**First attempt was a false start, worth recording.** The first run against the real `RUN_ROOT`
+completed successfully within the 2-minute limit, because `align`/`postprocess`/`quantify` for
+NA12878 were already cached from the prior full cohort run, and the resume guards correctly
+skipped them. To get a genuine timeout, the test needs to run against output that has never been
+produced before — a temporary `RUN_ROOT` override in `conf/slurm.env`, restored only after
+confirming (via the job's own log) that it had already sourced the file and started running.
+
+**Evidence (Explorer, job `10726328`, 30 Sep 2026, fresh output directory):**
+```bash
+sacct -j 10726328 --format=JobID,State,ExitCode,Elapsed,Timelimit
 ```
-[not yet run]
-sacct -j <jobid> --format=JobID,State,Elapsed,Timelimit,ExitCode,MaxRSS
+```
+JobID             State ExitCode    Elapsed  Timelimit
+------------ ---------- -------- ---------- ----------
+10726328_1      TIMEOUT      0:0   00:02:03   00:02:00
+10726328_1.+  CANCELLED     0:15   00:02:05
+10726328_1.+  COMPLETED      0:0   00:02:04
 ```
 
-**Write down:** the `State` (expected `TIMEOUT`, not `FAILED`), the last line reached in
-`slurm/logs/persample_<jobid>_1.out` — which identifies the stage it died inside — and what was
-left on disk under `$RUN_ROOT/run`.
+Log, `logs/persample_10726328_1.err`:
+```
+task 1 on c0638: sample=NA12878 cores=8 tmpdir=/tmp/10726328
+stage 0 (validate): checking samplesheet and inputs
+stage 0: all samples validated OK
+stage 1 (qc_raw): FastQC on raw FASTQ
+stage 1: qc_raw complete for 1 sample(s)
+stage 2 (trim): fastp adapter/quality trim
+stage 2: trim complete for 1 sample(s)
+stage 3 (align): BWA-MEM against full GRCh38
+align: NA12878
+slurmstepd: error: *** JOB 10726328 ON c0638 CANCELLED AT 2026-09-30T22:35:52 DUE TO TIME LIMIT ***
+```
 
-**What to check specifically, because this is where our resume design gets tested:** the killed
-stage should have left a `*.partial.bam` / `*.partial.g.vcf.gz` and **no** file under the real name.
-`trap 'rm -rf "${TMPDIR}"' EXIT` should also have removed `/tmp/<jobid>` — confirm with
-`ls /tmp/<jobid>` on the node, or by its absence in the next job's log.
+**Where it stopped:** mid-stage 3 (align), inside the `bwa mem | samtools view` pipeline. Stages
+0-2 (validate, qc_raw, trim) completed cleanly in about 1:51 combined — align never got a chance
+to finish.
 
-**Expected:** `[to fill in]`  ·  **Actually happened:** `[to fill in]`
+**What was left on disk:**
+```
+$ ls -la align/NA12878/
+total 1
+-rw-r--r-- 1 atre.m users 47 Sep 30 22:35 bwa.log
+```
+Only `bwa.log` (47 bytes, BWA's startup message) — no `.partial.bam` and no real `NA12878.bam`.
+The kill landed before `samtools view` had written anything at all, so there was nothing for the
+atomic-write/resume-guard pair to even need to protect against here; a slightly later kill would
+have left a `NA12878.partial.bam` instead, which is exactly the scenario Failure 4 covers.
+
+**Confirms:** Slurm's `--time` limit is enforced exactly as documented — the job is killed
+mid-command, not given a chance to finish its current step, and the state is correctly recorded
+as `TIMEOUT` rather than `FAILED`.
 
 ## Failure 2 · a task exits 1, with the cohort job on `afterok`
 
-**Break it:** make exactly one array task fail, leaving the other seven to succeed — e.g. point one
-row's `r1_fastq` at a path that does not exist, so stage 0 refuses that sample and only that sample.
-Submit through `submit.sh` so the dependency is wired as it normally is:
+**Break it:** copied the real 8-sample sheet, corrupted exactly one row's `r1_fastq` (NA12873,
+row 8) to point at a file that doesn't exist, and submitted the modified sheet through
+`submit.sh` so the `afterok` dependency was wired exactly as it normally is.
+
 ```bash
+cp /courses/BINF6610.202710/data/samplesheet-variant8.csv ~/samplesheet-broken.csv
+# edited NA12873's r1_fastq to .../NA12873_DOES_NOT_EXIST_R1.fastq.gz
+# SAMPLESHEET in conf/slurm.env pointed at the broken copy, RUN_ROOT pointed at a fresh dir
 bash slurm/submit.sh
 ```
 
-**Evidence:**
+**What actually happened — not what was expected, and more informative for it.** All eight
+array tasks failed, not just the one carrying the bad row:
+
+```bash
+sacct -j 10726468 --format=JobID,State,ExitCode
 ```
-[not yet run]
-sacct -j <array_jobid> --format=JobID,State,ExitCode
-sacct -j <cohort_jobid> --format=JobID,State,Reason,ExitCode
-squeue -j <cohort_jobid> -o '%i %T %r'
+```
+JobID             State ExitCode
+------------ ---------- --------
+10726468_1       FAILED      1:0
+10726468_2       FAILED      1:0
+10726468_3       FAILED      1:0
+10726468_4       FAILED      1:0
+10726468_5       FAILED      1:0
+10726468_6       FAILED      1:0
+10726468_7       FAILED      1:0
+10726468_8       FAILED      1:0
 ```
 
-**Write down:** what happened to the cohort job and its `Reason`. Expected: the array shows seven
-`COMPLETED` and one `FAILED`; the cohort job never starts, and because `submit.sh` passes
-`--kill-on-invalid-dep=yes` it is `CANCELLED` with a `DependencyNeverSatisfied` reason rather than
-sitting in the queue forever.
+Task 1's log (`NA12878`, a perfectly valid sample) shows why:
+```
+task 1 on c0617: sample=NA12878 cores=8 tmpdir=/tmp/10726469
+run_sample: restricting to sample 'NA12878'
+run_sample: matched 1 row(s) for 'NA12878'
+stage 0 (validate): checking samplesheet and inputs
+stage 0: 1 problem(s) found
+VALIDATION ERROR: sample 'NA12873': r1_fastq not found: /courses/.../NA12873_DOES_NOT_EXIST_R1.fastq.gz
+```
 
-**Why `afterok` and not `afterany`:** under `afterany` the cohort job would have run on seven
-GVCFs and produced a joint-called VCF quietly missing a column, which is worse than no VCF.
+**The cause:** `stage_validate()` is written (correctly, from Assignment 1's own "stage 0
+reports every problem together" requirement) to validate the *entire* samplesheet on every
+invocation, not just the row the current task cares about. Even though task 1 only ever
+*processes* NA12878, it still *validates* the full sheet first and refuses to proceed the
+moment any row in it is broken — including a row belonging to a sample this task will never
+touch. One corrupted row in the sheet blocks every array task, not just the one it belongs to.
 
-**Expected:** `[to fill in]`  ·  **Actually happened:** `[to fill in]`
+**Cohort job:**
+```bash
+sacct -j 10726476 --format=JobID,State,ExitCode,Reason
+```
+```
+JobID             State ExitCode                 Reason
+------------ ---------- -------- ----------------------
+10726476      CANCELLED      0:0             Dependency
+```
 
+Correctly `CANCELLED` with reason `Dependency`, since **zero** of the eight array tasks
+succeeded (`afterok` requires every task to succeed, and here none did) — `--kill-on-invalid-
+dep=yes` meant it never sat `PENDING` waiting on an impossible condition.
+
+**Why this is arguably a stronger result than the originally-expected "7 succeed, 1 fails"
+scenario:** the assignment's framing imagines one bad sample silently costing you one column
+of the cohort while the rest proceed. What was found instead is stricter: a single bad row
+anywhere in the sheet halts the *entire* array before any compute happens on *any* sample —
+which is more expensive (the whole array has to be resubmitted, not just the broken task) but
+also safer, since it's impossible for a partially-valid-looking cohort to silently exist.
+`afterok` still did exactly its job here: no task succeeded, so the cohort job correctly never
+started, regardless of which stage caused the failures.
 ## Failure 3 · `--array=1-9` against an eight-row samplesheet
 
 **This is the one that can succeed while being completely wrong**, which is why the guard exists.
@@ -231,11 +309,20 @@ cd slurm
 sbatch -p courses -A binf6610.202710 --array=1-9 01_persample.sbatch
 ```
 
-**Evidence:**
+**Evidence (Explorer, job `10726147`, 30 Sep 2026):**
+```bash
+sacct -j 10726147_9 --format=JobID,State,ExitCode
+cat logs/persample_10726147_9.err
 ```
-[not yet run]
-sacct -j <jobid> --format=JobID,State,ExitCode        # task _9 specifically
-cat logs/persample_<jobid>_9.err
+```
+JobID             State ExitCode
+------------ ---------- --------
+10726147_9       FAILED     64:0
+10726147_9.+     FAILED     64:0
+10726147_9.+  COMPLETED      0:0
+
+task 9: no data row 9 in /courses/BINF6610.202710/data/samplesheet-variant8.csv
+the --array range is wider than the sheet has samples
 ```
 
 **What task 9 did:** the awk in `01_persample.sbatch` finds no row 10 in an eight-row sheet and
@@ -251,57 +338,89 @@ quietly processed the whole cohort a second time, single-threaded, inside one ar
 exited 0. Under `afterok` that is worse than a failure: nine `COMPLETED` tasks, a cohort job that
 starts happily, and no error anywhere to explain the elapsed time.
 
-**Expected:** exit 64, `State=FAILED`, `ExitCode=64:0`.  ·  **Actually happened:** `[to fill in]`
+**Expected:** exit 64, `State=FAILED`, `ExitCode=64:0`.
+
+**Actually happened:** exactly as expected. Task 9 exited `FAILED 64:0`, naming the exact sheet
+and the missing row number. Tasks 1-8 ran normally against the real 8-row sheet — their
+validate/qc_raw/trim stages re-ran in full (no resume guard on those), while
+align/postprocess/quantify correctly skipped, already complete from the prior cohort run. No
+silent "processed every row" or "no row, exit 0" behavior was observed anywhere in the array.
 
 ## Failure 4 · `scancel` mid-write, then resubmit
 
 **Break it:**
 ```bash
-bash slurm/submit.sh 1-1
-sleep 90                                  # long enough to be inside stage 3 or 4
-scancel <array_jobid>
-bash slurm/submit.sh 1-1                  # resubmit, same output directory
+sbatch -p courses -A binf6610.202710 --array=1-1 01_persample.sbatch   # fresh output directory
+# watched the log until stage 3 (align) started, then:
+scancel <jobid>
 ```
 
-**The question being asked:** *did the rerun trust what was left behind?* It must not. A cancelled
-job leaves a half-written file, and the whole point of the guard-plus-atomic-rename pair added for
-this assignment is that such a file can never be mistaken for a finished one.
-
-**Evidence — Explorer:**
+**Evidence — first run, cancelled (Explorer, job `10726580`, 30 Sep 2026):**
+```bash
+sacct -j 10726580 --format=JobID,State,ExitCode
 ```
-[not yet run]
-sacct -j <first_jobid>  --format=JobID,State,ExitCode    # expect CANCELLED
-sacct -j <second_jobid> --format=JobID,State,Elapsed
-ls -la $RUN_ROOT/run/align/<sample>/                     # before the resubmit
+```
+JobID             State ExitCode
+------------ ---------- --------
+10726580_1   CANCELLED+      0:0
 ```
 
-**Evidence — local reproduction (real, run on the smoke dataset):** the failure mode was
-reproduced on a laptop rather than waiting for the cluster, by leaving behind exactly what a
-`scancel` during stage 3 leaves: a truncated `smoke_01.partial.bam` (the first 4096 bytes of a good
-BAM) and no `smoke_01.bam`. Re-running all ten stages then showed:
+Log shows the cancel landed 9 seconds into stage 3, inside `bwa mem | samtools view`:
+```
+stage 3 (align): BWA-MEM against full GRCh38
+align: NA12878
+slurmstepd: error: *** JOB 10726580 ON c0617 CANCELLED AT 2026-09-30T22:56:04 ***
+```
 
-- the rerun logged `align: smoke_01` — it re-ran the stage rather than skipping it, so it did
-  **not** trust the partial file;
-- the leftover `.partial.bam` was gone afterwards (`discard_partial` removes a stale one before
-  reusing the name, so it is deleted rather than resumed from);
-- the rebuilt BAM was **byte-identical** to the one from the clean run, and passed
-  `samtools quickcheck`;
-- the other two samples logged `already done, skipping` and were not recomputed.
+**What was left on disk:**
+```
+$ ls -la align/NA12878/
+total 1
+-rw-r--r-- 1 atre.m users 151 Sep 30 22:56 bwa.log
+```
+No `.partial.bam` and no real `NA12878.bam` — the cancel landed early enough that
+`samtools view` had not yet written any output at all.
 
-A second check in the same reproduction: deleting only `smoke_01.dedup.bam.bai` and leaving the BAM
-caused `postprocess` to re-run for that sample rather than skip on the BAM alone — the guard tests
-the data file *and* its index, because stage 5 needs both. The expensive sort was reused
-(`sort already done`) while MarkDuplicates and the indexing were redone.
+**The question being asked:** *did the rerun trust what was left behind?* Resubmitted the
+identical job against the same output directory.
 
-**Why a truncated file can never appear under the real name:** each stage writes to a `.partial`
-sibling in the same directory and renames it only after the tool exits 0. A rename within one
-filesystem is atomic, and the sidecar index is renamed *before* the data file, so the name the
-guard tests for is always the last one to appear. Being killed between the two renames leaves an
-index with no data file, the guard sees nothing, and the work is redone — the safe direction.
+**Evidence — resubmission (job `10726629`):**
+```bash
+sacct -j 10726629 --format=JobID,State,ExitCode,Elapsed
+```
+```
+JobID             State ExitCode    Elapsed
+------------ ---------- -------- ----------
+10726629_1    COMPLETED      0:0   00:08:24
+```
 
-**Note on provoking this on Explorer:** with a 10 Mb call region the per-sample stages are quick,
-so `scancel` may well land after the write it was aiming at. If that happens, say so and report
-which stage had already completed — a `scancel` that arrives too late is a legitimate finding, not
-a failed attempt.
+The log confirms it **re-ran** align from scratch rather than skipping — `align: NA12878`
+appears again, followed by a real completion 1:29 later, then postprocess and quantify both
+ran to completion normally:
+```
+stage 3 (align): BWA-MEM against full GRCh38
+align: NA12878
+stage 3: align complete for 1 sample(s)
+stage 4 (postprocess): sort, index, mark duplicates
+...
+stage 5: quantify complete for 1 sample(s)
+stopping after requested stage: quantify
+```
 
-**Expected:** `[to fill in from Explorer]`  ·  **Actually happened:** `[to fill in from Explorer]`
+**What was left on disk after the successful rerun:**
+```
+$ ls -la align/NA12878/
+total 215839
+-rw-r--r-- 1 atre.m users 221013056 Sep 30 23:02 NA12878.bam
+-rw-r--r-- 1 atre.m users      5630 Sep 30 23:02 bwa.log
+```
+A real, complete 221 MB BAM under the real name, **no `.partial.bam` left behind** — the
+atomic rename removed the temp name the moment `samtools view` exited successfully.
+
+**Confirms:** the rerun trusted nothing from the cancelled attempt. In this particular trial
+the cancel landed early enough that there was nothing partial to trust in the first place — no
+file existed under either the real or the `.partial` name — so the resume guard's `[[ -s
+"$bam" ]]` check correctly found nothing and re-ran the stage unconditionally. This is the
+same safe-by-construction behavior verified locally during development (see the Assignment 1
+entries above): a stage only ever trusts a file that made it all the way to its real name,
+and a `.partial` sibling is always discarded, never resumed from, before a stage starts over.
