@@ -45,8 +45,7 @@ source "${SLURM_SUBMIT_DIR}/conf/slurm.env"
 cd "${SLURM_SUBMIT_DIR}"
 mkdir -p logs
 
-module load miniconda3/25.9.1
-source activate "${CONDA_ENV}"
+SIF="/scratch/${USER}/containers/variant-call.sif"
 
 # The cores Slurm actually gave us, handed to the tools. The pipeline already
 # reads THREADS from the environment and lets it beat conf/pipeline.env, so this
@@ -98,5 +97,12 @@ printf 'task %s on %s: sample=%s cores=%s tmpdir=%s\n' \
 
 # Stages 0-5 only. run_sample.sh refuses the cohort stages by name, so a typo
 # here cannot start joint-calling an incomplete cohort from inside an array task.
-bash "${PIPELINE_DIR}/run_sample.sh" \
-     "${SAMPLESHEET}" "${RUN_ROOT}/run" "${SAMPLE}" quantify
+apptainer exec --cleanenv \
+    --env THREADS="${THREADS}" \
+    --env TMPDIR="${TMPDIR}" \
+    --env SLURM_JOB_ID="${SLURM_JOB_ID}" \
+    --env SLURM_CPUS_PER_TASK="${SLURM_CPUS_PER_TASK}" \
+    --bind /courses/BINF6610.202710,/scratch/${USER} \
+    "${SIF}" \
+    bash "${PIPELINE_DIR}/run_sample.sh" \
+         "${SAMPLESHEET}" "${RUN_ROOT}/run" "${SAMPLE}" quantify

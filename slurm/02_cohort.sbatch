@@ -39,8 +39,7 @@ source "${SLURM_SUBMIT_DIR}/conf/slurm.env"
 cd "${SLURM_SUBMIT_DIR}"
 mkdir -p logs
 
-module load miniconda3/25.9.1
-source activate "${CONDA_ENV}"
+SIF="/scratch/${USER}/containers/variant-call.sif"
 
 export THREADS="${SLURM_CPUS_PER_TASK}"
 
@@ -53,9 +52,15 @@ printf 'cohort job %s on %s: cores=%s tmpdir=%s\n' \
 
 # Stages 6-9 only. run_cohort.sh refuses the per-sample stages by name, so this
 # job cannot be talked into re-running eight samples serially in one allocation.
-bash "${PIPELINE_DIR}/run_cohort.sh" \
-     "${SAMPLESHEET}" "${RUN_ROOT}/run" publish
-
+apptainer exec --cleanenv \
+    --env THREADS="${THREADS}" \
+    --env TMPDIR="${TMPDIR}" \
+    --env SLURM_JOB_ID="${SLURM_JOB_ID}" \
+    --env SLURM_CPUS_PER_TASK="${SLURM_CPUS_PER_TASK}" \
+    --bind /courses/BINF6610.202710,/scratch/${USER} \
+    "${SIF}" \
+    bash "${PIPELINE_DIR}/run_cohort.sh" \
+         "${SAMPLESHEET}" "${RUN_ROOT}/run" publish
 printf 'cohort complete: %s\n' "${RUN_ROOT}/run" >&2
 printf 'NOTE: %s is on /scratch and will be purged. Copy results/ and\n' "${RUN_ROOT}" >&2
 printf '      manifest.json somewhere durable before that happens.\n' >&2
