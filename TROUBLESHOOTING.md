@@ -424,3 +424,143 @@ file existed under either the real or the `.partial` name — so the resume guar
 same safe-by-construction behavior verified locally during development (see the Assignment 1
 entries above): a stage only ever trusts a file that made it all the way to its real name,
 and a `.partial` sibling is always discarded, never resumed from, before a stage starts over.
+---
+
+# Part 3 · Assignment 3, container failures caused on purpose
+
+## Failure: missing --env THREADS
+
+**Break it:** removed `--env THREADS="${THREADS}"` from `01_persample.sbatch`'s `apptainer exec`
+line, left everything else (`--cleanenv`, `--bind`, the other three `--env` lines) intact, and ran
+one sample on an 8-core allocation.
+
+**Command:**
+```
+sbatch -p courses -A binf6610.202710 --array=1-1 --export=NONE 01_persample_nothreads.sbatch
+```
+
+**What it printed:** nothing failed. The job completed normally, `COMPLETED 0:0`, all five stages
+ran to completion. The only evidence is in the tool's own log, not in Slurm's exit status:
+
+```
+$ grep "[main] CMD:" align/NA12878/bwa.log
+[main] CMD: bwa mem -t 4 -R @RG\tID:NA12878\tSM:NA12878\tPL:ILLUMINA ...
+```
+
+**The actual failure:** the job was allocated 8 cores (`--cpus-per-task=8`), but `bwa mem` ran with
+`-t 4` — the pipeline's own hardcoded default, since `THREADS` was never set inside the container
+(`--cleanenv` strips everything not explicitly passed in with `--env`). Four of the eight cores sat
+idle for the whole alignment step, and nothing anywhere reports this: exit code 0, no warning, no
+log line saying "using fewer cores than requested." The only way to catch it is to go looking in
+the tool's own log, exactly as the assignment's framing warns: "it stops nothing... only the log
+shows it."
+
+**The fix:** restore the `--env THREADS="${THREADS}"` line. Confirmed in the working version of
+`01_persample.sbatch`, `bwa mem -t 8` is what actually runs.
+
+## Failure: missing --bind
+
+**Break it:** removed `--bind /courses/BINF6610.202710,/scratch/${USER}` from `01_persample.sbatch`'s
+`apptainer exec` line, left `--cleanenv` and all four `--env` lines intact, and ran one sample.
+
+**Command:**
+```
+sbatch -p courses -A binf6610.202710 --array=1-1 --export=NONE 01_persample_nobind.sbatch
+```
+
+**What it printed:** failed immediately, at stage 0, before any real work started:
+
+```
+$ sacct -j 10764764 --format=JobID,State,ExitCode
+10764764_1    FAILED   1:0
+```
+
+```
+$ cat logs/f2_10764764_1.err
+task 1 on c3014: sample=NA12878 cores=8 tmpdir=/tmp/10764764
+mkdir: cannot create directory '/scratch': Read-only file system
+```
+
+**Exit code:** 1. **Which path the container couldn't see:** `/scratch` — without `--bind`, the
+container has no view of `/scratch/${USER}` at all (read-only, in fact not even mounted as the
+real filesystem), so `mkdir -p "${TMPDIR}"` inside the pipeline's own setup fails before stage 0
+can even begin. `/courses` would have failed the same way one step later if this hadn't failed
+first — the pipeline would have reported every FASTQ as missing, the same failure mode the Week 3
+page describes for FastQC ("Skipping ... which didn't exist").
+
+**The fix:** restore `--bind /courses/BINF6610.202710,/scratch/${USER}`. Confirmed in the working
+`01_persample.sbatch`, the run proceeds normally with this flag present.
+
+
+## Failure: arm64 image on amd64 Explorer
+
+**Break it:** pulled an arm64-architecture image directly on Explorer, then tried to run it.
+
+**Command:**
+```
+apptainer pull --arch arm64 arm.sif docker://ubuntu:24.04
+apptainer exec arm.sif uname -m
+```
+
+**Whether the pull succeeded:** yes, with no warning at pull time at all:
+
+```
+INFO:    Converting OCI blobs to SIF format
+INFO:    Fetching OCI image...
+27.6MiB / 27.6MiB [...] 100 % 19.5 MiB/s 0s
+INFO:    Extracting OCI image...
+INFO:    Creating SIF file...
+[...] 100 % 0s
+```
+
+No error, no architecture check, a complete `.sif` file written to disk. The mismatch is
+completely invisible until the moment you actually try to run it.
+
+**What the run said:**
+
+```
+FATAL:   While checking container encryption: could not open image /home/atre.m/arm.sif:
+the image's architecture (arm64) could not run on the host's (amd64)
+```
+
+**The lesson:** this is the exact failure mode the Week 2/3 pre-flight material already names
+as the single most common way this assignment goes sideways — an image can be built, pushed,
+and pulled with zero complaint, and only fails the moment it's actually executed on the wrong
+CPU architecture. It's why `docker build --platform linux/amd64` and
+`docker image inspect --format '{{.Architecture}}'` are checked *before* ever pushing — catching
+this at build time on a laptop is free; catching it here, after a real pull, costs a wasted
+pull and a job that never produces any useful output.
+
+**The fix:** always build and pull with the correct architecture explicit — `--platform
+linux/amd64` on `docker build`, and no `--arch arm64` override on `apptainer pull` (the default
+correctly matches the host). Confirmed `atremeghana/variant-call:1.0` is `amd64` via
+`docker image inspect --format '{{.Architecture}}'` before it was ever pushed.
+
+
+## Failure: unpinned rebuild drift (incomplete — insufficient time gap)
+
+**Break it:** built `FROM ubuntu` (no tag) with `RUN apt-get update && apt-get install -y curl`,
+saved the package list (`dpkg -l`), intending to rebuild with `--pull --no-cache` a full day later
+and diff the two.
+
+**What actually happened:** the assignment's deadline did not allow the required 24-hour gap
+between builds. Only ran the first build (2 Oct, ~14:34 EDT); never ran the second. This test
+specifically requires elapsed real time — Ubuntu's apt repositories publish new package builds
+on their own schedule, not on command, so a rebuild minutes or hours later would very plausibly
+show the same packages as the first build, proving nothing. The course's own Week 3 material
+makes this explicit with a real measurement: one pinned recipe, rebuilt 14 days apart, showed 57
+packages differ; the same recipe rebuilt same-day would show close to zero.
+
+**Why this one specifically needs the gap, unlike the other three:** failures 2-4 are
+deterministic — removing `--bind` fails the same way whether you try it now or tomorrow. This one
+is the opposite: it's testing a time-dependent external fact (whether upstream packages changed),
+not a mistake in a flag or a recipe. There is no way to "simulate" the 24 hours; the gap *is* the
+experiment.
+
+**What this confirms about the fix regardless:** every tool this pipeline actually depends on
+(bwa, samtools, bcftools, gatk4, fastqc, fastp, multiqc, git) is pinned to an exact version in
+`containers/variant-call/Dockerfile`, verified directly against the course's own conda
+environment via `conda env export`. The base image is also pinned to an exact tag
+(`mambaorg/micromamba:2.0.5-ubuntu24.04`, digest recorded in `IMAGE.md`), not `latest`. The
+real pipeline image is not exposed to the drift this test demonstrates — only the throwaway
+`FROM ubuntu` (no tag) test image used specifically to provoke it would be.
