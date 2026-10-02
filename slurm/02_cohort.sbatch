@@ -15,11 +15,11 @@
 # joint-called cohort quietly missing a column, which is worse than no cohort.
 #
 # No --array here and no sample id: this job is the whole cohort by design, and
-# run_cohort.sh clears ONLY_SAMPLE_ID itself so an inherited filter cannot
+# run_pipeline.sh clears ONLY_SAMPLE_ID itself so an inherited filter cannot
 # shrink it.
 #
 # Same rule as the array script: this file schedules, it does not analyse. The
-# only thing it executes is run_cohort.sh.
+# only thing it executes is run_pipeline.sh.
 #
 # The resource numbers above are DEFAULTS AND GUESSES, overridden by submit.sh
 # from slurm/conf/slurm.env. Neither set is measured yet - see RESOURCES.md.
@@ -50,7 +50,7 @@ trap 'rm -rf "${TMPDIR}"' EXIT
 printf 'cohort job %s on %s: cores=%s tmpdir=%s\n' \
        "${SLURM_JOB_ID}" "$(hostname)" "${SLURM_CPUS_PER_TASK}" "${TMPDIR}" >&2
 
-# Stages 6-9 only. run_cohort.sh refuses the per-sample stages by name, so this
+# Stages 6-9 only. run_pipeline.sh refuses the per-sample stages by name, so this
 # job cannot be talked into re-running eight samples serially in one allocation.
 apptainer exec --cleanenv \
     --env THREADS="${THREADS}" \
@@ -59,5 +59,5 @@ apptainer exec --cleanenv \
     --env SLURM_CPUS_PER_TASK="${SLURM_CPUS_PER_TASK}" \
     --bind /courses/BINF6610.202710,/scratch/${USER} \
     "${SIF}" \
-    bash "${PIPELINE_DIR}/run_cohort.sh" \
+    bash "${PIPELINE_DIR}/run_pipeline.sh" \
          "${SAMPLESHEET}" "${RUN_ROOT}/run" publish
