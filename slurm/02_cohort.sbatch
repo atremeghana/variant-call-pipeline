@@ -61,6 +61,4 @@ apptainer exec --cleanenv \
     "${SIF}" \
     bash "${PIPELINE_DIR}/run_cohort.sh" \
          "${SAMPLESHEET}" "${RUN_ROOT}/run" publish
-printf 'cohort complete: %s\n' "${RUN_ROOT}/run" >&2
-printf 'NOTE: %s is on /scratch and will be purged. Copy results/ and\n' "${RUN_ROOT}" >&2
-printf '      manifest.json somewhere durable before that happens.\n' >&2
+
