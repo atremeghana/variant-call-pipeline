@@ -61,4 +61,3 @@ apptainer exec --cleanenv \
     "${SIF}" \
     bash "${PIPELINE_DIR}/run_cohort.sh" \
          "${SAMPLESHEET}" "${RUN_ROOT}/run" publish
-
