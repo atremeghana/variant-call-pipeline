@@ -32,3 +32,17 @@ slurm/logs/
 # you discover at the deadline that the 20-mark deliverable was never committed.
 !cluster-run/
 !cluster-run/**
+
+# Week 4 — Nextflow
+work/
+.nextflow/
+.nextflow.log*
+results/
+nf-head-*.out
+
+# Week 4 — Nextflow
+work/
+.nextflow/
+.nextflow.log*
+results/
+nf-head-*.out
