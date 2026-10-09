@@ -1,0 +1,50 @@
+{
+  "pipeline": {
+    "name": "variant-call",
+    "version": "1.0.0",
+    "implementation": "nextflow",
+    "revision": "none",
+    "git_sha": "none",
+    "run_id": "focused_wiles",
+    "started_at": "2026-10-09T12:17:31.804524945-04:00",
+    "launch_dir": "/home/atre.m/variant-call-pipeline",
+    "finished_at": "2026-10-09T16:29:00Z",
+    "exit_status": "success"
+  },
+  "params": {
+    "samplesheet": "/courses/BINF6610.202710/data/samplesheet-variant8.csv",
+    "ref": "/courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa",
+    "region": "chr20:1-10000000",
+    "outdir": "results",
+    "platform": "singularity-hpc"
+  },
+  "platform": {
+    "kind": "singularity-hpc",
+    "executor": "slurm",
+    "engine": "nextflow 26.04.6",
+    "containers": {
+      "tools": "community.wave.seqera.io/library/coreutils_gawk_gzip:7c58ccc2f9ca6bcc",
+      "fastqc": "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0",
+      "fastp": "community.wave.seqera.io/library/fastp:1.3.7--075357a9d5c82494",
+      "bwa": "community.wave.seqera.io/library/bwa_samtools:22527ddb3cc80fb3",
+      "gatk": "community.wave.seqera.io/library/gatk4_samtools_bcftools:1adede7d418fb46b",
+      "multiqc": "quay.io/biocontainers/multiqc:1.35--pyhdfd78af_2"
+    }
+  },
+  "samples": [
+    {"sample_id": "NA12878", "library_type": "paired", "condition": "affected"},
+    {"sample_id": "NA12891", "library_type": "paired", "condition": "affected"},
+    {"sample_id": "NA12892", "library_type": "single", "condition": "unaffected"},
+    {"sample_id": "NA07357", "library_type": "paired", "condition": "unaffected"},
+    {"sample_id": "NA12003", "library_type": "single", "condition": "affected"},
+    {"sample_id": "NA10851", "library_type": "paired", "condition": "unaffected"},
+    {"sample_id": "NA12813", "library_type": "paired", "condition": "affected"},
+    {"sample_id": "NA12873", "library_type": "paired", "condition": "unaffected"}
+  ],
+  "outputs": [
+    {"path": "cohort.filtered.vcf.gz", "checksum": "sha256:d087b94bae9d4c1d845873d4f7aeea4d87c193f278ca82f7f36dfed0489806b9"},
+    {"path": "multiqc_report.html", "checksum": "sha256:b1cb8dd2fba3cdcb98c86c62d7911e51d91e90b5037355ebee7aea5ec7d5c137"},
+    {"path": "samples.tsv", "checksum": "sha256:0aca79e22a2e172db689f8b6220dd030173f1615dfbdb35496d1bc195a5975eb"},
+    {"path": "variants.tsv", "checksum": "sha256:14c724e22d5bc31a3350b9b92b5278627e6fdd31ddb10d439a998694e7709a29"}
+  ]
+}

@@ -1,0 +1,5 @@
+cluster-run-container/cohort.filtered.vcf.gz:
+8fcefbce28583ae132f5f1938ecfb6d899066d92f1805e0757aef009341f8232  -
+cluster-run-nf/cohort.filtered.vcf.gz:
+da27388e05e366830f40b6bb44bf1273f9418cb86ccd5eb42e11041d4a9d8e64  -
+They differ because: both runs used identical --cpus-per-task=8, the same samplesheet, reference, and region, ruling out the thread-count effect the assignment calls out. The remaining difference is most likely GATK HaplotypeCaller's documented floating-point non-determinism in its multi-threaded PairHMM implementation, which can produce tiny genotype-likelihood differences between runs even with identical inputs and settings.
