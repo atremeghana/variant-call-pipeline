@@ -1,0 +1,40 @@
+{
+  "pipeline": {
+    "name": "variant-call",
+    "version": "1.0.0",
+    "implementation": "snakemake",
+    "revision": "none",
+    "git_sha": "none",
+    "run_id": "snakemake-20261016T101417",
+    "started_at": "2026-10-16T10:14:17.457007-04:00",
+    "launch_dir": "/mnt/c/binf6610/variant-call-pipeline",
+    "finished_at": "2026-10-16T14:17:27Z",
+    "exit_status": "success"
+  },
+  "params": {
+    "platform": "laptop",
+    "executor": "local",
+    "samplesheet": "/mnt/c/binf6610/variant-call-pipeline/smoke/samplesheet.csv",
+    "ref": "/mnt/c/binf6610/variant-call-pipeline/smoke/smoke.fa",
+    "region": "smoke_1mb",
+    "outdir": "results"
+  },
+  "platform": {
+    "kind": "laptop",
+    "executor": "local",
+    "engine": "snakemake 9.27.0",
+    "containers": {}
+  },
+  "samples": [
+    {"sample_id": "smoke_01", "library_type": "paired", "condition": "unaffected"},
+    {"sample_id": "smoke_02", "library_type": "paired", "condition": "affected"},
+    {"sample_id": "smoke_03", "library_type": "single", "condition": "affected"}
+  ],
+  "outputs": [
+    {"path": "cohort.filtered.vcf.gz", "checksum": "sha256:2e23e1ff96608dbf9c3c212852588eb0891e12878122e14d97157a01a5e1695d"},
+    {"path": "cohort.filtered.vcf.gz.tbi", "checksum": "sha256:344ae31847d1135355e6ab18a77c60ff04bad11ee27f4da17b9316e1cbcb213a"},
+    {"path": "multiqc_report.html", "checksum": "sha256:07f471bcaa58871623db6f97ac960abf2def3318554045191a8956d8144cf49c"},
+    {"path": "samples.tsv", "checksum": "sha256:d534edf8132cce4c541af0eea6cc345b17613e1b4a7a5286742aa8d16395257c"},
+    {"path": "variants.tsv", "checksum": "sha256:fa075326455bdce3c7b91e3e377815c7590bcdb501310bab17a47d2f54d492fb"}
+  ]
+}

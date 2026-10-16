@@ -1,0 +1,36 @@
+[2026-10-16 10:16:53,740] multiqc                                            [DEBUG  ]  This is MultiQC v1.18
+[2026-10-16 10:16:53,742] multiqc                                            [DEBUG  ]  Command used: /usr/bin/multiqc -q -f -o results work/fastqc/smoke_01 work/fastqc/smoke_02 work/fastqc/smoke_03 work/trim/smoke_01.fastp.json work/trim/smoke_02.fastp.json work/trim/smoke_03.fastp.json
+[2026-10-16 10:16:54,686] multiqc                                            [WARNING]  MultiQC Version v1.35 now available!
+[2026-10-16 10:16:54,687] multiqc                                            [DEBUG  ]  Working dir : /mnt/c/binf6610/variant-call-pipeline
+[2026-10-16 10:16:54,687] multiqc                                            [DEBUG  ]  Template    : default
+[2026-10-16 10:16:54,687] multiqc                                            [DEBUG  ]  Running Python 3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]
+[2026-10-16 10:16:54,687] multiqc                                            [DEBUG  ]  Analysing modules: custom_content, ccs, ngsderive, purple, conpair, lima, peddy, somalier, methylQA, mosdepth, phantompeakqualtools, qualimap, preseq, hifiasm, quast, qorts, rna_seqc, rockhopper, rsem, rseqc, busco, bustools, goleft_indexcov, gffcompare, disambiguate, supernova, deeptools, sargasso, verifybamid, mirtrace, happy, mirtop, sambamba, gopeaks, homer, hops, macs2, theta2, snpeff, gatk, htseq, bcftools, featureCounts, fgbio, dragen, dragen_fastqc, dedup, pbmarkdup, damageprofiler, mapdamage, biobambam2, jcvi, mtnucratio, picard, vep, bakta, prokka, qc3C, nanostat, samblaster, samtools, sexdeterrmine, seqera_cli, eigenstratdatabasetools, bamtools, jellyfish, vcftools, longranger, stacks, varscan2, snippy, umitools, truvari, bbmap, bismark, biscuit, diamond, hicexplorer, hicup, hicpro, salmon, kallisto, slamdunk, star, hisat2, tophat, bowtie2, bowtie1, cellranger, snpsplit, odgi, pangolin, nextclade, freyja, humid, kat, leehom, librarian, adapterRemoval, bbduk, clipandmerge, cutadapt, flexbar, sourmash, kaiju, bracken, kraken, malt, motus, trimmomatic, sickle, skewer, sortmerna, biobloomtools, fastq_screen, afterqc, fastp, fastqc, filtlong, prinseqplusplus, pychopper, porechop, pycoqc, minionqc, anglerfish, multivcfanalyzer, clusterflow, checkqc, bcl2fastq, bclconvert, interop, ivar, flash, seqyclean, optitype, whatshap, xenome, xengsort
+[2026-10-16 10:16:54,688] multiqc                                            [DEBUG  ]  Using temporary directory for creating report: /tmp/tmpkmdqovw1
+[2026-10-16 10:16:54,692] multiqc                                            [INFO   ]  Search path : /mnt/c/binf6610/variant-call-pipeline/work/fastqc/smoke_01
+[2026-10-16 10:16:54,692] multiqc                                            [INFO   ]  Search path : /mnt/c/binf6610/variant-call-pipeline/work/fastqc/smoke_02
+[2026-10-16 10:16:54,692] multiqc                                            [INFO   ]  Search path : /mnt/c/binf6610/variant-call-pipeline/work/fastqc/smoke_03
+[2026-10-16 10:16:54,692] multiqc                                            [INFO   ]  Search path : /mnt/c/binf6610/variant-call-pipeline/work/trim/smoke_01.fastp.json
+[2026-10-16 10:16:54,692] multiqc                                            [INFO   ]  Search path : /mnt/c/binf6610/variant-call-pipeline/work/trim/smoke_02.fastp.json
+[2026-10-16 10:16:54,692] multiqc                                            [INFO   ]  Search path : /mnt/c/binf6610/variant-call-pipeline/work/trim/smoke_03.fastp.json
+[2026-10-16 10:16:57,300] multiqc                                            [DEBUG  ]  Summary of files that were skipped by the search: [skipped_module_specific_max_filesize: 60] // [skipped_no_match: 8]
+[2026-10-16 10:17:06,838] multiqc                                            [DEBUG  ]  No samples found: custom_content
+[2026-10-16 10:17:06,863] multiqc.modules.fastp.fastp                        [INFO   ]  Found 3 reports
+[2026-10-16 10:17:06,863] multiqc.modules.fastp.fastp                        [DEBUG  ]  No duplication rate plot data: smoke_01_R1
+[2026-10-16 10:17:06,864] multiqc.modules.fastp.fastp                        [DEBUG  ]  No duplication rate plot data: smoke_02_R1
+[2026-10-16 10:17:06,864] multiqc.modules.fastp.fastp                        [DEBUG  ]  fastp JSON did not have a 'adapter_cutting' key, skipping: 'smoke_03_R1'
+[2026-10-16 10:17:06,864] multiqc.modules.fastp.fastp                        [DEBUG  ]  Could not calculate 'pct_adapter' (KeyError): smoke_03_R1
+[2026-10-16 10:17:06,864] multiqc.modules.fastp.fastp                        [DEBUG  ]  No duplication rate plot data: smoke_03_R1
+[2026-10-16 10:17:06,864] multiqc.modules.fastp.fastp                        [DEBUG  ]  No insert size plot data: smoke_03_R1
+[2026-10-16 10:17:06,864] multiqc.modules.fastp.fastp                        [DEBUG  ]  Read quality read2_before_filtering not found: smoke_03_R1
+[2026-10-16 10:17:06,864] multiqc.modules.fastp.fastp                        [DEBUG  ]  Content curve data read2_before_filtering not found: smoke_03_R1
+[2026-10-16 10:17:06,864] multiqc.modules.fastp.fastp                        [DEBUG  ]  Read quality read2_after_filtering not found: smoke_03_R1
+[2026-10-16 10:17:06,864] multiqc.modules.fastp.fastp                        [DEBUG  ]  Content curve data read2_after_filtering not found: smoke_03_R1
+[2026-10-16 10:17:06,914] multiqc.modules.fastqc.fastqc                      [INFO   ]  Found 5 reports
+[2026-10-16 10:17:06,943] multiqc.utils.software_versions                    [DEBUG  ]  Reading software versions from config.software_versions
+[2026-10-16 10:17:06,953] multiqc                                            [DEBUG  ]  Compressing plot data
+[2026-10-16 10:17:07,080] multiqc                                            [INFO   ]  Report      : results/multiqc_report.html
+[2026-10-16 10:17:07,080] multiqc                                            [INFO   ]  Data        : results/multiqc_data
+[2026-10-16 10:17:07,080] multiqc                                            [DEBUG  ]  Moving data file from '/tmp/tmpkmdqovw1/multiqc_data' to 'results/multiqc_data'
+[2026-10-16 10:17:07,327] multiqc                                            [DEBUG  ]  Full report path: /mnt/c/binf6610/variant-call-pipeline/results/multiqc_report.html
+[2026-10-16 10:17:07,447] multiqc                                            [ERROR  ]  Could not include file 'assets/js/packages/jszip.min.js': [Errno 2] No such file or directory: '/tmp/tmpkmdqovw1/assets/js/packages/jszip.min.js'
+[2026-10-16 10:17:07,521] multiqc                                            [INFO   ]  MultiQC complete

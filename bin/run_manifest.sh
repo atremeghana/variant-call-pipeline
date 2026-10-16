@@ -1,25 +1,26 @@
 #!/usr/bin/env bash
 #-----------------------------------------------------------------------------
-# run_manifest.sh — the receipt a Nextflow run writes when it finishes.
+# run_manifest.sh — the receipt a run writes when it finishes.
 #
 #   run_manifest.sh <published_dir> <samplesheet>  > manifest.json
 #
-# It runs inside the PUBLISH task, in an image, on whatever machine ran that
-# task. None of that is the place the run happened, and the image has no git,
-# so the facts about the run arrive from Nextflow as environment variables,
-# which modules/publish.nf sets:
+# It runs as the publish rule, possibly in an image, which has no git. So the
+# facts about the run arrive from the workflow engine as environment variables,
+# which the Snakefile's publish rule sets:
 #
 #   NAME, VERSION    the pipeline's name and version, from the manifest block of nextflow.config
-#   REVISION, COMMIT the branch or tag and the commit, when the run was launched from a
-#                    repository with `nextflow run <repo> -r <revision>`; "none" otherwise
-#   RUN_NAME         Nextflow's name for this run, the one `nextflow log` lists
+#   REVISION, COMMIT the branch or tag and the commit, when whoever launched the run gave
+#                    them; "none" otherwise
+#   RUN_NAME         a name for this run
 #   STARTED_AT       when the run started
-#   LAUNCH_DIR       the folder `nextflow run` was typed in; relative paths in PARAMS start here
-#   ENGINE           the workflow engine and its version, e.g. "nextflow 26.04.6"
+#   LAUNCH_DIR       the folder the run was launched in; relative paths in PARAMS start here
+#   ENGINE           the workflow engine and its version, e.g. "snakemake 9.27.0"; its first
+#                    word is the manifest's "implementation"
 #   PLATFORM         where the tasks ran: docker-local, singularity-hpc, ...
 #   EXECUTOR         what submitted them: local, slurm, ...
 #   PARAMS           every parameter the run was given, "name=value name=value ..."
-#   CONTAINERS       every image the run used, "name=image name=image ..."
+#   CONTAINERS       every image the run used, "name=image name=image ...", or empty when
+#                    the rules ran with the tools installed on the machine
 #
 # The outputs are every file in <published_dir>, each with its sha256.
 #-----------------------------------------------------------------------------
@@ -29,7 +30,7 @@ if (( BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 3) ))
 fi
 PUB=${1:?usage: run_manifest.sh <published_dir> <samplesheet>}
 SHEET=${2:?usage: run_manifest.sh <published_dir> <samplesheet>}
-: "${NAME:?} ${VERSION:?} ${REVISION:?} ${COMMIT:?} ${RUN_NAME:?} ${STARTED_AT:?} ${LAUNCH_DIR:?} ${ENGINE:?} ${PLATFORM:?} ${EXECUTOR:?} ${PARAMS:?} ${CONTAINERS:?}"
+: "${NAME:?} ${VERSION:?} ${REVISION:?} ${COMMIT:?} ${RUN_NAME:?} ${STARTED_AT:?} ${LAUNCH_DIR:?} ${ENGINE:?} ${PLATFORM:?} ${EXECUTOR:?} ${PARAMS:?} ${CONTAINERS?}"
 
 js() { local s=${1//\\/\\\\}; s=${s//\"/\\\"}; printf '"%s"' "$s"; }
 
@@ -41,10 +42,14 @@ samples_json() {
         END { if (n) printf "\n  " }' "$SHEET"
 }
 
+# sha256sum is GNU's; a Mac before macOS 15 has only shasum. Week 5 runs this on the laptop with no
+# image around it, so both are allowed, as week 1's write_manifest.sh does.
+sha256_of() { if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1"; else shasum -a 256 "$1"; fi | awk '{ print $1 }'; }
+
 outputs_json() {
     local f sep=''
     while IFS= read -r f; do
-        printf '%s\n    {"path": %s, "checksum": "sha256:%s"}' "$sep" "$(js "$f")" "$(sha256sum "$PUB/$f" | awk '{ print $1 }')"
+        printf '%s\n    {"path": %s, "checksum": "sha256:%s"}' "$sep" "$(js "$f")" "$(sha256_of "$PUB/$f")"
         sep=','
     done < <(cd "$PUB" && find . -type f | sed 's|^\./||' | LC_ALL=C sort)
     [[ -z "$sep" ]] || printf '\n  '
@@ -63,7 +68,7 @@ printf '{\n'
 printf '  "pipeline": {\n'
 printf '    "name": %s,\n'         "$(js "$NAME")"
 printf '    "version": %s,\n'      "$(js "$VERSION")"
-printf '    "implementation": "nextflow",\n'
+printf '    "implementation": %s,\n' "$(js "${ENGINE%% *}")"
 printf '    "revision": %s,\n'     "$(js "$REVISION")"
 printf '    "git_sha": %s,\n'      "$(js "$COMMIT")"
 printf '    "run_id": %s,\n'       "$(js "$RUN_NAME")"

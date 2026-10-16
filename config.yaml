@@ -1,0 +1,17 @@
+samplesheet: null
+ref: null
+region: null
+outdir: results
+
+# Where the rules ran and what submitted them. Each profile sets these, in its platform.yaml.
+platform: null
+executor: null
+
+# The images, the same table as week 4. Used on Explorer only.
+containers:
+  tools: community.wave.seqera.io/library/coreutils_gawk_gzip:7c58ccc2f9ca6bcc
+  fastqc: quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0
+  fastp: community.wave.seqera.io/library/fastp:1.3.7--075357a9d5c82494
+  bwa: community.wave.seqera.io/library/bwa_samtools:22527ddb3cc80fb3
+  gatk: community.wave.seqera.io/library/gatk4_samtools_bcftools:1adede7d418fb46b
+  multiqc: quay.io/biocontainers/multiqc:1.35--pyhdfd78af_2

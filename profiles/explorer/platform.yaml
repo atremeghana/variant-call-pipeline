@@ -1,0 +1,2 @@
+platform: singularity-hpc
+executor: slurm

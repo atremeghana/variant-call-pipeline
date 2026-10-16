@@ -1,0 +1,21 @@
+executor: slurm
+jobs: 20
+configfile: profiles/explorer/platform.yaml
+software-deployment-method: apptainer
+apptainer-prefix: /courses/BINF6610.202710/shared/snakemake-images
+apptainer-args: "--bind /courses,/scratch"
+latency-wait: 60
+printshellcmds: true
+
+default-resources:
+  slurm_account: binf6610.202710
+  slurm_partition: courses
+  runtime: 30
+  mem_mb: 2000
+
+set-resources:
+  bwa_mem:         {mem_mb: 16000, runtime: 60}
+  haplotypecaller: {mem_mb: 16000, runtime: 60}
+  markduplicates:  {mem_mb: 8000,  runtime: 60}
+  joint_genotype:  {mem_mb: 8000,  runtime: 60}
+  filter:          {mem_mb: 8000,  runtime: 60}

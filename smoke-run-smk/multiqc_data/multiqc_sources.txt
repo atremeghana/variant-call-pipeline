@@ -1,0 +1,9 @@
+Module	Section	Sample Name	Source
+fastp	all_sections	smoke_01_R1	/mnt/c/binf6610/variant-call-pipeline/work/trim/smoke_01.fastp.json
+fastp	all_sections	smoke_02_R1	/mnt/c/binf6610/variant-call-pipeline/work/trim/smoke_02.fastp.json
+fastp	all_sections	smoke_03_R1	/mnt/c/binf6610/variant-call-pipeline/work/trim/smoke_03.fastp.json
+FastQC	all_sections	smoke_01_R1	/mnt/c/binf6610/variant-call-pipeline/work/fastqc/smoke_01/smoke_01_R1_fastqc.zip
+FastQC	all_sections	smoke_01_R2	/mnt/c/binf6610/variant-call-pipeline/work/fastqc/smoke_01/smoke_01_R2_fastqc.zip
+FastQC	all_sections	smoke_02_R1	/mnt/c/binf6610/variant-call-pipeline/work/fastqc/smoke_02/smoke_02_R1_fastqc.zip
+FastQC	all_sections	smoke_02_R2	/mnt/c/binf6610/variant-call-pipeline/work/fastqc/smoke_02/smoke_02_R2_fastqc.zip
+FastQC	all_sections	smoke_03_R1	/mnt/c/binf6610/variant-call-pipeline/work/fastqc/smoke_03/smoke_03_R1_fastqc.zip
