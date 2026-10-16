@@ -1,0 +1,1063 @@
+Using profile profiles/explorer for setting default command line arguments.
+Config file config.yaml is extended by additional config specified via the command line.
+
+SNAKEMAKE
+=========
+  Date: 2026-10-16 10:25:35
+  Workflow ID: c8376f34-f661-4825-8807-c781606edb6e
+  Platform: Linux-5.14.0-362.13.1.el9_3.x86_64-x86_64-with-glibc2.34
+  Host: c3014
+  User: atre.m
+  Snakemake version: 9.27.0
+  Python version: 3.12.14 (main, Sep  2 2026, 23:27:36) [GCC 15.3.0]
+  Command: /courses/BINF6610.202710/shared/env/binf6610-workflows/bin/snakemake --profile profiles/explorer --config samplesheet=/courses/BINF6610.202710/data/samplesheet-variant8.csv ref=/courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa region=chr20:1-10000000 outdir=results
+  Snakefile: /home/atre.m/variant-call-pipeline/Snakefile
+  Base directory: /home/atre.m/variant-call-pipeline
+  Run directory: /home/atre.m/variant-call-pipeline
+  Working directory: /home/atre.m/variant-call-pipeline
+  Config file(s): [PosixPath('/home/atre.m/variant-call-pipeline/profiles/explorer/platform.yaml'), 'config.yaml']
+  Config MD5: 7ca8633d42ad3571369e4c12e7b79180
+
+Building DAG of jobs...
+You are running snakemake in a SLURM job context. This is not recommended, as it may lead to unexpected behavior. If possible, please run Snakemake directly on the login node.
+SLURM run ID: 53b1bee3-5bf8-409e-bd07-1c0082e957e7
+MinJobAge 300s (>= 120s). 'squeue' should work reliably for status queries.
+Using shell: /usr/bin/bash
+Provided remote nodes: 20
+Job stats:
+job                count
+---------------  -------
+validate               1
+fastp_paired           6
+fastp_single           2
+fastqc                 8
+bwa_mem                8
+multiqc                1
+markduplicates         8
+haplotypecaller        8
+joint_genotype         1
+filter                 1
+publish                1
+all                    1
+total                 46
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Fri Oct 16 10:25:36 2026]
+rule validate:
+    input: /courses/BINF6610.202710/data/samplesheet-variant8.csv, /courses/BINF6610.202710/data/fastq-variant/NA12878_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12878_R2.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12891_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12891_R2.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12892_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA07357_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA07357_R2.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12003_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA10851_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA10851_R2.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12813_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12813_R2.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12873_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12873_R2.fastq.gz, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.fai, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.amb, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.ann, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.pac, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.sa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.dict
+    output: work/validate/samplesheet.csv
+    log: logs/validate.log
+    jobid: 7
+    reason: Missing output files: work/validate/samplesheet.csv
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=19601, disk=19.6 GB, disk_mib=18693, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: (/home/atre.m/variant-call-pipeline/bin/validate_samplesheet_smk.sh /courses/BINF6610.202710/data/samplesheet-variant8.csv /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa && cp /courses/BINF6610.202710/data/samplesheet-variant8.csv work/validate/samplesheet.csv) 2> logs/validate.log
+Job 7 has been submitted with SLURM jobid 11134555 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_validate/11134555.log).
+[Fri Oct 16 10:27:07 2026]
+Finished jobid: 7 (Rule: validate)
+1 of 46 steps (2%) done
+Select jobs to execute...
+Execute 16 jobs...
+
+[Fri Oct 16 10:27:07 2026]
+rule fastp_paired:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA12891_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12891_R2.fastq.gz, work/validate/samplesheet.csv
+    output: work/trim/NA12891_R1.trim.fastq.gz, work/trim/NA12891_R2.trim.fastq.gz, work/trim/NA12891.fastp.json, work/trim/NA12891.fastp.html
+    log: logs/trim/NA12891.log
+    jobid: 11
+    reason: Missing output files: work/trim/NA12891_R2.trim.fastq.gz, work/trim/NA12891_R1.trim.fastq.gz, work/trim/NA12891.fastp.json; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA12891
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: fastp -i /courses/BINF6610.202710/data/fastq-variant/NA12891_R1.fastq.gz -I /courses/BINF6610.202710/data/fastq-variant/NA12891_R2.fastq.gz -o work/trim/NA12891_R1.trim.fastq.gz -O work/trim/NA12891_R2.trim.fastq.gz --json work/trim/NA12891.fastp.json --html work/trim/NA12891.fastp.html 2> logs/trim/NA12891.log
+
+[Fri Oct 16 10:27:07 2026]
+rule fastp_paired:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA07357_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA07357_R2.fastq.gz, work/validate/samplesheet.csv
+    output: work/trim/NA07357_R1.trim.fastq.gz, work/trim/NA07357_R2.trim.fastq.gz, work/trim/NA07357.fastp.json, work/trim/NA07357.fastp.html
+    log: logs/trim/NA07357.log
+    jobid: 19
+    reason: Missing output files: work/trim/NA07357_R1.trim.fastq.gz, work/trim/NA07357.fastp.json, work/trim/NA07357_R2.trim.fastq.gz; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA07357
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: fastp -i /courses/BINF6610.202710/data/fastq-variant/NA07357_R1.fastq.gz -I /courses/BINF6610.202710/data/fastq-variant/NA07357_R2.fastq.gz -o work/trim/NA07357_R1.trim.fastq.gz -O work/trim/NA07357_R2.trim.fastq.gz --json work/trim/NA07357.fastp.json --html work/trim/NA07357.fastp.html 2> logs/trim/NA07357.log
+
+[Fri Oct 16 10:27:07 2026]
+rule fastp_paired:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA12878_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12878_R2.fastq.gz, work/validate/samplesheet.csv
+    output: work/trim/NA12878_R1.trim.fastq.gz, work/trim/NA12878_R2.trim.fastq.gz, work/trim/NA12878.fastp.json, work/trim/NA12878.fastp.html
+    log: logs/trim/NA12878.log
+    jobid: 6
+    reason: Missing output files: work/trim/NA12878_R1.trim.fastq.gz, work/trim/NA12878_R2.trim.fastq.gz, work/trim/NA12878.fastp.json; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA12878
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: fastp -i /courses/BINF6610.202710/data/fastq-variant/NA12878_R1.fastq.gz -I /courses/BINF6610.202710/data/fastq-variant/NA12878_R2.fastq.gz -o work/trim/NA12878_R1.trim.fastq.gz -O work/trim/NA12878_R2.trim.fastq.gz --json work/trim/NA12878.fastp.json --html work/trim/NA12878.fastp.html 2> logs/trim/NA12878.log
+
+[Fri Oct 16 10:27:07 2026]
+rule fastp_paired:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA12873_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12873_R2.fastq.gz, work/validate/samplesheet.csv
+    output: work/trim/NA12873_R1.trim.fastq.gz, work/trim/NA12873_R2.trim.fastq.gz, work/trim/NA12873.fastp.json, work/trim/NA12873.fastp.html
+    log: logs/trim/NA12873.log
+    jobid: 35
+    reason: Missing output files: work/trim/NA12873.fastp.json, work/trim/NA12873_R2.trim.fastq.gz, work/trim/NA12873_R1.trim.fastq.gz; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA12873
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: fastp -i /courses/BINF6610.202710/data/fastq-variant/NA12873_R1.fastq.gz -I /courses/BINF6610.202710/data/fastq-variant/NA12873_R2.fastq.gz -o work/trim/NA12873_R1.trim.fastq.gz -O work/trim/NA12873_R2.trim.fastq.gz --json work/trim/NA12873.fastp.json --html work/trim/NA12873.fastp.html 2> logs/trim/NA12873.log
+
+[Fri Oct 16 10:27:07 2026]
+rule fastp_paired:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA12813_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12813_R2.fastq.gz, work/validate/samplesheet.csv
+    output: work/trim/NA12813_R1.trim.fastq.gz, work/trim/NA12813_R2.trim.fastq.gz, work/trim/NA12813.fastp.json, work/trim/NA12813.fastp.html
+    log: logs/trim/NA12813.log
+    jobid: 31
+    reason: Missing output files: work/trim/NA12813_R2.trim.fastq.gz, work/trim/NA12813.fastp.json, work/trim/NA12813_R1.trim.fastq.gz; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA12813
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: fastp -i /courses/BINF6610.202710/data/fastq-variant/NA12813_R1.fastq.gz -I /courses/BINF6610.202710/data/fastq-variant/NA12813_R2.fastq.gz -o work/trim/NA12813_R1.trim.fastq.gz -O work/trim/NA12813_R2.trim.fastq.gz --json work/trim/NA12813.fastp.json --html work/trim/NA12813.fastp.html 2> logs/trim/NA12813.log
+
+[Fri Oct 16 10:27:07 2026]
+rule fastp_paired:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA10851_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA10851_R2.fastq.gz, work/validate/samplesheet.csv
+    output: work/trim/NA10851_R1.trim.fastq.gz, work/trim/NA10851_R2.trim.fastq.gz, work/trim/NA10851.fastp.json, work/trim/NA10851.fastp.html
+    log: logs/trim/NA10851.log
+    jobid: 27
+    reason: Missing output files: work/trim/NA10851.fastp.json, work/trim/NA10851_R1.trim.fastq.gz, work/trim/NA10851_R2.trim.fastq.gz; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA10851
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: fastp -i /courses/BINF6610.202710/data/fastq-variant/NA10851_R1.fastq.gz -I /courses/BINF6610.202710/data/fastq-variant/NA10851_R2.fastq.gz -o work/trim/NA10851_R1.trim.fastq.gz -O work/trim/NA10851_R2.trim.fastq.gz --json work/trim/NA10851.fastp.json --html work/trim/NA10851.fastp.html 2> logs/trim/NA10851.log
+
+[Fri Oct 16 10:27:07 2026]
+rule fastqc:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA12878_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12878_R2.fastq.gz, work/validate/samplesheet.csv
+    output: work/fastqc/NA12878
+    log: logs/fastqc/NA12878.log
+    jobid: 37
+    reason: Missing output files: work/fastqc/NA12878; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA12878
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: mkdir -p work/fastqc/NA12878 && fastqc --quiet -o work/fastqc/NA12878 /courses/BINF6610.202710/data/fastq-variant/NA12878_R1.fastq.gz /courses/BINF6610.202710/data/fastq-variant/NA12878_R2.fastq.gz 2> logs/fastqc/NA12878.log
+
+[Fri Oct 16 10:27:07 2026]
+rule fastqc:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA12892_R1.fastq.gz, work/validate/samplesheet.csv
+    output: work/fastqc/NA12892
+    log: logs/fastqc/NA12892.log
+    jobid: 39
+    reason: Missing output files: work/fastqc/NA12892; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA12892
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: mkdir -p work/fastqc/NA12892 && fastqc --quiet -o work/fastqc/NA12892 /courses/BINF6610.202710/data/fastq-variant/NA12892_R1.fastq.gz 2> logs/fastqc/NA12892.log
+
+[Fri Oct 16 10:27:07 2026]
+rule fastqc:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA12003_R1.fastq.gz, work/validate/samplesheet.csv
+    output: work/fastqc/NA12003
+    log: logs/fastqc/NA12003.log
+    jobid: 41
+    reason: Missing output files: work/fastqc/NA12003; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA12003
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: mkdir -p work/fastqc/NA12003 && fastqc --quiet -o work/fastqc/NA12003 /courses/BINF6610.202710/data/fastq-variant/NA12003_R1.fastq.gz 2> logs/fastqc/NA12003.log
+
+[Fri Oct 16 10:27:07 2026]
+rule fastqc:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA12813_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12813_R2.fastq.gz, work/validate/samplesheet.csv
+    output: work/fastqc/NA12813
+    log: logs/fastqc/NA12813.log
+    jobid: 43
+    reason: Missing output files: work/fastqc/NA12813; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA12813
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: mkdir -p work/fastqc/NA12813 && fastqc --quiet -o work/fastqc/NA12813 /courses/BINF6610.202710/data/fastq-variant/NA12813_R1.fastq.gz /courses/BINF6610.202710/data/fastq-variant/NA12813_R2.fastq.gz 2> logs/fastqc/NA12813.log
+
+[Fri Oct 16 10:27:07 2026]
+rule fastqc:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA12891_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12891_R2.fastq.gz, work/validate/samplesheet.csv
+    output: work/fastqc/NA12891
+    log: logs/fastqc/NA12891.log
+    jobid: 38
+    reason: Missing output files: work/fastqc/NA12891; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA12891
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: mkdir -p work/fastqc/NA12891 && fastqc --quiet -o work/fastqc/NA12891 /courses/BINF6610.202710/data/fastq-variant/NA12891_R1.fastq.gz /courses/BINF6610.202710/data/fastq-variant/NA12891_R2.fastq.gz 2> logs/fastqc/NA12891.log
+
+[Fri Oct 16 10:27:07 2026]
+rule fastqc:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA07357_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA07357_R2.fastq.gz, work/validate/samplesheet.csv
+    output: work/fastqc/NA07357
+    log: logs/fastqc/NA07357.log
+    jobid: 40
+    reason: Missing output files: work/fastqc/NA07357; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA07357
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: mkdir -p work/fastqc/NA07357 && fastqc --quiet -o work/fastqc/NA07357 /courses/BINF6610.202710/data/fastq-variant/NA07357_R1.fastq.gz /courses/BINF6610.202710/data/fastq-variant/NA07357_R2.fastq.gz 2> logs/fastqc/NA07357.log
+
+[Fri Oct 16 10:27:07 2026]
+rule fastqc:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA10851_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA10851_R2.fastq.gz, work/validate/samplesheet.csv
+    output: work/fastqc/NA10851
+    log: logs/fastqc/NA10851.log
+    jobid: 42
+    reason: Missing output files: work/fastqc/NA10851; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA10851
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: mkdir -p work/fastqc/NA10851 && fastqc --quiet -o work/fastqc/NA10851 /courses/BINF6610.202710/data/fastq-variant/NA10851_R1.fastq.gz /courses/BINF6610.202710/data/fastq-variant/NA10851_R2.fastq.gz 2> logs/fastqc/NA10851.log
+
+[Fri Oct 16 10:27:07 2026]
+rule fastqc:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA12873_R1.fastq.gz, /courses/BINF6610.202710/data/fastq-variant/NA12873_R2.fastq.gz, work/validate/samplesheet.csv
+    output: work/fastqc/NA12873
+    log: logs/fastqc/NA12873.log
+    jobid: 44
+    reason: Missing output files: work/fastqc/NA12873; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA12873
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: mkdir -p work/fastqc/NA12873 && fastqc --quiet -o work/fastqc/NA12873 /courses/BINF6610.202710/data/fastq-variant/NA12873_R1.fastq.gz /courses/BINF6610.202710/data/fastq-variant/NA12873_R2.fastq.gz 2> logs/fastqc/NA12873.log
+
+[Fri Oct 16 10:27:07 2026]
+rule fastp_single:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA12003_R1.fastq.gz, work/validate/samplesheet.csv
+    output: work/trim/NA12003_R1.trim.fastq.gz, work/trim/NA12003.fastp.json, work/trim/NA12003.fastp.html
+    log: logs/trim/NA12003.log
+    jobid: 23
+    reason: Missing output files: work/trim/NA12003_R1.trim.fastq.gz, work/trim/NA12003.fastp.json; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA12003
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: fastp -i /courses/BINF6610.202710/data/fastq-variant/NA12003_R1.fastq.gz -o work/trim/NA12003_R1.trim.fastq.gz --json work/trim/NA12003.fastp.json --html work/trim/NA12003.fastp.html 2> logs/trim/NA12003.log
+
+[Fri Oct 16 10:27:07 2026]
+rule fastp_single:
+    input: /courses/BINF6610.202710/data/fastq-variant/NA12892_R1.fastq.gz, work/validate/samplesheet.csv
+    output: work/trim/NA12892_R1.trim.fastq.gz, work/trim/NA12892.fastp.json, work/trim/NA12892.fastp.html
+    log: logs/trim/NA12892.log
+    jobid: 15
+    reason: Missing output files: work/trim/NA12892.fastp.json, work/trim/NA12892_R1.trim.fastq.gz; Input files updated by another job: work/validate/samplesheet.csv
+    wildcards: sample=NA12892
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: fastp -i /courses/BINF6610.202710/data/fastq-variant/NA12892_R1.fastq.gz -o work/trim/NA12892_R1.trim.fastq.gz --json work/trim/NA12892.fastp.json --html work/trim/NA12892.fastp.html 2> logs/trim/NA12892.log
+Job 11 has been submitted with SLURM jobid 11134578 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastp_paired/NA12891/11134578.log).
+Job 19 has been submitted with SLURM jobid 11134579 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastp_paired/NA07357/11134579.log).
+Job 6 has been submitted with SLURM jobid 11134580 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastp_paired/NA12878/11134580.log).
+Job 35 has been submitted with SLURM jobid 11134581 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastp_paired/NA12873/11134581.log).
+Job 31 has been submitted with SLURM jobid 11134582 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastp_paired/NA12813/11134582.log).
+Job 27 has been submitted with SLURM jobid 11134583 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastp_paired/NA10851/11134583.log).
+Job 37 has been submitted with SLURM jobid 11134585 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastqc/NA12878/11134585.log).
+Job 39 has been submitted with SLURM jobid 11134586 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastqc/NA12892/11134586.log).
+Job 41 has been submitted with SLURM jobid 11134588 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastqc/NA12003/11134588.log).
+Job 43 has been submitted with SLURM jobid 11134589 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastqc/NA12813/11134589.log).
+Job 38 has been submitted with SLURM jobid 11134590 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastqc/NA12891/11134590.log).
+Job 40 has been submitted with SLURM jobid 11134592 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastqc/NA07357/11134592.log).
+Job 42 has been submitted with SLURM jobid 11134593 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastqc/NA10851/11134593.log).
+Job 44 has been submitted with SLURM jobid 11134594 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastqc/NA12873/11134594.log).
+Job 23 has been submitted with SLURM jobid 11134595 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastp_single/NA12003/11134595.log).
+Job 15 has been submitted with SLURM jobid 11134596 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_fastp_single/NA12892/11134596.log).
+[Fri Oct 16 10:27:47 2026]
+Finished jobid: 39 (Rule: fastqc)
+2 of 46 steps (4%) done
+[Fri Oct 16 10:27:47 2026]
+Finished jobid: 41 (Rule: fastqc)
+3 of 46 steps (7%) done
+[Fri Oct 16 10:28:28 2026]
+Finished jobid: 19 (Rule: fastp_paired)
+4 of 46 steps (9%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Fri Oct 16 10:28:29 2026]
+rule bwa_mem:
+    input: work/trim/NA07357_R1.trim.fastq.gz, work/trim/NA07357_R2.trim.fastq.gz, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.amb, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.ann, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.pac, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.sa
+    output: work/align/NA07357.bam
+    log: logs/align/NA07357.log
+    jobid: 18
+    reason: Missing output files: work/align/NA07357.bam; Input files updated by another job: work/trim/NA07357_R1.trim.fastq.gz, work/trim/NA07357_R2.trim.fastq.gz
+    wildcards: sample=NA07357
+    threads: 8
+    resources: tmpdir=<TBD>, mem_mb=16000, mem=16 GB, mem_mib=15259, disk_mb=17278, disk=17.28 GB, disk_mib=16478, slurm_account=binf6610.202710, slurm_partition=courses, runtime=60
+Shell command: (bwa mem -t 8 -R '@RG\tID:NA07357\tSM:NA07357\tPL:ILLUMINA' /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa work/trim/NA07357_R1.trim.fastq.gz work/trim/NA07357_R2.trim.fastq.gz | samtools view -b -o work/align/NA07357.bam -) 2> logs/align/NA07357.log
+[Fri Oct 16 10:28:30 2026]
+Finished jobid: 11 (Rule: fastp_paired)
+5 of 46 steps (11%) done
+Job 18 has been submitted with SLURM jobid 11134620 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_bwa_mem/NA07357/11134620.log).
+[Fri Oct 16 10:28:30 2026]
+Finished jobid: 6 (Rule: fastp_paired)
+6 of 46 steps (13%) done
+[Fri Oct 16 10:28:31 2026]
+Finished jobid: 35 (Rule: fastp_paired)
+7 of 46 steps (15%) done
+Select jobs to execute...
+Execute 3 jobs...
+
+[Fri Oct 16 10:28:31 2026]
+rule bwa_mem:
+    input: work/trim/NA12878_R1.trim.fastq.gz, work/trim/NA12878_R2.trim.fastq.gz, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.amb, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.ann, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.pac, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.sa
+    output: work/align/NA12878.bam
+    log: logs/align/NA12878.log
+    jobid: 5
+    reason: Missing output files: work/align/NA12878.bam; Input files updated by another job: work/trim/NA12878_R1.trim.fastq.gz, work/trim/NA12878_R2.trim.fastq.gz
+    wildcards: sample=NA12878
+    threads: 8
+    resources: tmpdir=<TBD>, mem_mb=16000, mem=16 GB, mem_mib=15259, disk_mb=17305, disk=17.3 GB, disk_mib=16504, slurm_account=binf6610.202710, slurm_partition=courses, runtime=60
+Shell command: (bwa mem -t 8 -R '@RG\tID:NA12878\tSM:NA12878\tPL:ILLUMINA' /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa work/trim/NA12878_R1.trim.fastq.gz work/trim/NA12878_R2.trim.fastq.gz | samtools view -b -o work/align/NA12878.bam -) 2> logs/align/NA12878.log
+
+[Fri Oct 16 10:28:31 2026]
+rule bwa_mem:
+    input: work/trim/NA12873_R1.trim.fastq.gz, work/trim/NA12873_R2.trim.fastq.gz, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.amb, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.ann, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.pac, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.sa
+    output: work/align/NA12873.bam
+    log: logs/align/NA12873.log
+    jobid: 34
+    reason: Missing output files: work/align/NA12873.bam; Input files updated by another job: work/trim/NA12873_R2.trim.fastq.gz, work/trim/NA12873_R1.trim.fastq.gz
+    wildcards: sample=NA12873
+    threads: 8
+    resources: tmpdir=<TBD>, mem_mb=16000, mem=16 GB, mem_mib=15259, disk_mb=17399, disk=17.4 GB, disk_mib=16593, slurm_account=binf6610.202710, slurm_partition=courses, runtime=60
+Shell command: (bwa mem -t 8 -R '@RG\tID:NA12873\tSM:NA12873\tPL:ILLUMINA' /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa work/trim/NA12873_R1.trim.fastq.gz work/trim/NA12873_R2.trim.fastq.gz | samtools view -b -o work/align/NA12873.bam -) 2> logs/align/NA12873.log
+
+[Fri Oct 16 10:28:31 2026]
+rule bwa_mem:
+    input: work/trim/NA12891_R1.trim.fastq.gz, work/trim/NA12891_R2.trim.fastq.gz, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.amb, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.ann, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.pac, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.sa
+    output: work/align/NA12891.bam
+    log: logs/align/NA12891.log
+    jobid: 10
+    reason: Missing output files: work/align/NA12891.bam; Input files updated by another job: work/trim/NA12891_R1.trim.fastq.gz, work/trim/NA12891_R2.trim.fastq.gz
+    wildcards: sample=NA12891
+    threads: 8
+    resources: tmpdir=<TBD>, mem_mb=16000, mem=16 GB, mem_mib=15259, disk_mb=17322, disk=17.32 GB, disk_mib=16520, slurm_account=binf6610.202710, slurm_partition=courses, runtime=60
+Shell command: (bwa mem -t 8 -R '@RG\tID:NA12891\tSM:NA12891\tPL:ILLUMINA' /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa work/trim/NA12891_R1.trim.fastq.gz work/trim/NA12891_R2.trim.fastq.gz | samtools view -b -o work/align/NA12891.bam -) 2> logs/align/NA12891.log
+[Fri Oct 16 10:28:32 2026]
+Finished jobid: 27 (Rule: fastp_paired)
+8 of 46 steps (17%) done
+[Fri Oct 16 10:28:32 2026]
+Finished jobid: 31 (Rule: fastp_paired)
+9 of 46 steps (20%) done
+Select jobs to execute...
+Execute 2 jobs...
+
+[Fri Oct 16 10:28:32 2026]
+rule bwa_mem:
+    input: work/trim/NA10851_R1.trim.fastq.gz, work/trim/NA10851_R2.trim.fastq.gz, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.amb, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.ann, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.pac, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.sa
+    output: work/align/NA10851.bam
+    log: logs/align/NA10851.log
+    jobid: 26
+    reason: Missing output files: work/align/NA10851.bam; Input files updated by another job: work/trim/NA10851_R1.trim.fastq.gz, work/trim/NA10851_R2.trim.fastq.gz
+    wildcards: sample=NA10851
+    threads: 8
+    resources: tmpdir=<TBD>, mem_mb=16000, mem=16 GB, mem_mib=15259, disk_mb=17310, disk=17.31 GB, disk_mib=16509, slurm_account=binf6610.202710, slurm_partition=courses, runtime=60
+Shell command: (bwa mem -t 8 -R '@RG\tID:NA10851\tSM:NA10851\tPL:ILLUMINA' /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa work/trim/NA10851_R1.trim.fastq.gz work/trim/NA10851_R2.trim.fastq.gz | samtools view -b -o work/align/NA10851.bam -) 2> logs/align/NA10851.log
+
+[Fri Oct 16 10:28:32 2026]
+rule bwa_mem:
+    input: work/trim/NA12813_R1.trim.fastq.gz, work/trim/NA12813_R2.trim.fastq.gz, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.amb, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.ann, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.pac, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.sa
+    output: work/align/NA12813.bam
+    log: logs/align/NA12813.log
+    jobid: 30
+    reason: Missing output files: work/align/NA12813.bam; Input files updated by another job: work/trim/NA12813_R2.trim.fastq.gz, work/trim/NA12813_R1.trim.fastq.gz
+    wildcards: sample=NA12813
+    threads: 8
+    resources: tmpdir=<TBD>, mem_mb=16000, mem=16 GB, mem_mib=15259, disk_mb=17536, disk=17.54 GB, disk_mib=16724, slurm_account=binf6610.202710, slurm_partition=courses, runtime=60
+Shell command: (bwa mem -t 8 -R '@RG\tID:NA12813\tSM:NA12813\tPL:ILLUMINA' /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa work/trim/NA12813_R1.trim.fastq.gz work/trim/NA12813_R2.trim.fastq.gz | samtools view -b -o work/align/NA12813.bam -) 2> logs/align/NA12813.log
+[Fri Oct 16 10:28:32 2026]
+Finished jobid: 37 (Rule: fastqc)
+10 of 46 steps (22%) done
+[Fri Oct 16 10:28:32 2026]
+Finished jobid: 43 (Rule: fastqc)
+11 of 46 steps (24%) done
+[Fri Oct 16 10:28:32 2026]
+Finished jobid: 40 (Rule: fastqc)
+12 of 46 steps (26%) done
+[Fri Oct 16 10:28:32 2026]
+Finished jobid: 38 (Rule: fastqc)
+13 of 46 steps (28%) done
+[Fri Oct 16 10:28:32 2026]
+Finished jobid: 42 (Rule: fastqc)
+14 of 46 steps (30%) done
+[Fri Oct 16 10:28:32 2026]
+Finished jobid: 44 (Rule: fastqc)
+15 of 46 steps (33%) done
+[Fri Oct 16 10:28:33 2026]
+Finished jobid: 23 (Rule: fastp_single)
+16 of 46 steps (35%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Fri Oct 16 10:28:33 2026]
+rule bwa_mem:
+    input: work/trim/NA12003_R1.trim.fastq.gz, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.amb, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.ann, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.pac, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.sa
+    output: work/align/NA12003.bam
+    log: logs/align/NA12003.log
+    jobid: 22
+    reason: Missing output files: work/align/NA12003.bam; Input files updated by another job: work/trim/NA12003_R1.trim.fastq.gz
+    wildcards: sample=NA12003
+    threads: 8
+    resources: tmpdir=<TBD>, mem_mb=16000, mem=16 GB, mem_mib=15259, disk_mb=17151, disk=17.15 GB, disk_mib=16357, slurm_account=binf6610.202710, slurm_partition=courses, runtime=60
+Shell command: (bwa mem -t 8 -R '@RG\tID:NA12003\tSM:NA12003\tPL:ILLUMINA' /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa work/trim/NA12003_R1.trim.fastq.gz | samtools view -b -o work/align/NA12003.bam -) 2> logs/align/NA12003.log
+[Fri Oct 16 10:28:33 2026]
+Finished jobid: 15 (Rule: fastp_single)
+17 of 46 steps (37%) done
+Select jobs to execute...
+Execute 2 jobs...
+
+[Fri Oct 16 10:28:33 2026]
+rule multiqc:
+    input: work/fastqc/NA12878, work/fastqc/NA12891, work/fastqc/NA12892, work/fastqc/NA07357, work/fastqc/NA12003, work/fastqc/NA10851, work/fastqc/NA12813, work/fastqc/NA12873, work/trim/NA12878.fastp.json, work/trim/NA12891.fastp.json, work/trim/NA12892.fastp.json, work/trim/NA07357.fastp.json, work/trim/NA12003.fastp.json, work/trim/NA10851.fastp.json, work/trim/NA12813.fastp.json, work/trim/NA12873.fastp.json
+    output: results/multiqc_report.html
+    log: logs/multiqc.log
+    jobid: 36
+    reason: Missing output files: results/multiqc_report.html; Input files updated by another job: work/trim/NA12892.fastp.json, work/fastqc/NA12891, work/fastqc/NA12892, work/fastqc/NA12873, work/fastqc/NA07357, work/trim/NA07357.fastp.json, work/trim/NA12891.fastp.json, work/trim/NA10851.fastp.json, work/fastqc/NA12878, work/fastqc/NA12003, work/trim/NA12813.fastp.json, work/fastqc/NA10851, work/fastqc/NA12813, work/trim/NA12878.fastp.json, work/trim/NA12873.fastp.json, work/trim/NA12003.fastp.json
+    resources: tmpdir=<TBD>, mem_mb=2000, mem=2 GB, mem_mib=1908, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=30
+Shell command: multiqc -q -f -o results work/fastqc/NA12878 work/fastqc/NA12891 work/fastqc/NA12892 work/fastqc/NA07357 work/fastqc/NA12003 work/fastqc/NA10851 work/fastqc/NA12813 work/fastqc/NA12873 work/trim/NA12878.fastp.json work/trim/NA12891.fastp.json work/trim/NA12892.fastp.json work/trim/NA07357.fastp.json work/trim/NA12003.fastp.json work/trim/NA10851.fastp.json work/trim/NA12813.fastp.json work/trim/NA12873.fastp.json 2> logs/multiqc.log
+
+[Fri Oct 16 10:28:33 2026]
+rule bwa_mem:
+    input: work/trim/NA12892_R1.trim.fastq.gz, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.amb, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.ann, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.pac, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.sa
+    output: work/align/NA12892.bam
+    log: logs/align/NA12892.log
+    jobid: 14
+    reason: Missing output files: work/align/NA12892.bam; Input files updated by another job: work/trim/NA12892_R1.trim.fastq.gz
+    wildcards: sample=NA12892
+    threads: 8
+    resources: tmpdir=<TBD>, mem_mb=16000, mem=16 GB, mem_mib=15259, disk_mb=17135, disk=17.14 GB, disk_mib=16342, slurm_account=binf6610.202710, slurm_partition=courses, runtime=60
+Shell command: (bwa mem -t 8 -R '@RG\tID:NA12892\tSM:NA12892\tPL:ILLUMINA' /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa work/trim/NA12892_R1.trim.fastq.gz | samtools view -b -o work/align/NA12892.bam -) 2> logs/align/NA12892.log
+Job 5 has been submitted with SLURM jobid 11134622 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_bwa_mem/NA12878/11134622.log).
+Job 34 has been submitted with SLURM jobid 11134624 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_bwa_mem/NA12873/11134624.log).
+Job 26 has been submitted with SLURM jobid 11134625 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_bwa_mem/NA10851/11134625.log).
+Job 10 has been submitted with SLURM jobid 11134627 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_bwa_mem/NA12891/11134627.log).
+Job 30 has been submitted with SLURM jobid 11134628 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_bwa_mem/NA12813/11134628.log).
+Job 22 has been submitted with SLURM jobid 11134630 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_bwa_mem/NA12003/11134630.log).
+Job 36 has been submitted with SLURM jobid 11134631 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_multiqc/11134631.log).
+Job 14 has been submitted with SLURM jobid 11134633 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_bwa_mem/NA12892/11134633.log).
+Waiting at most 60 seconds for missing files:
+results/multiqc_report.html (missing locally)
+[Fri Oct 16 10:29:55 2026]
+Finished jobid: 36 (Rule: multiqc)
+18 of 46 steps (39%) done
+[Fri Oct 16 10:29:55 2026]
+Finished jobid: 22 (Rule: bwa_mem)
+19 of 46 steps (41%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Fri Oct 16 10:29:55 2026]
+rule markduplicates:
+    input: work/align/NA12003.bam
+    output: work/postprocess/NA12003.dedup.bam, work/postprocess/NA12003.dedup.bam.bai, work/postprocess/NA12003.dup_metrics.txt
+    log: logs/postprocess/NA12003.log
+    jobid: 21
+    reason: Missing output files: work/postprocess/NA12003.dedup.bam, work/postprocess/NA12003.dedup.bam.bai; Input files updated by another job: work/align/NA12003.bam
+    wildcards: sample=NA12003
+    threads: 8
+    resources: tmpdir=<TBD>, mem_mb=8000, mem=8 GB, mem_mib=7630, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=60
+Shell command: 
+        (samtools sort -@ 8 -o work/postprocess/NA12003.sorted.bam work/align/NA12003.bam
+         gatk MarkDuplicates -I work/postprocess/NA12003.sorted.bam \
+             -O work/postprocess/NA12003.dedup.bam -M work/postprocess/NA12003.dup_metrics.txt
+         samtools index work/postprocess/NA12003.dedup.bam) 2> logs/postprocess/NA12003.log
+        
+[Fri Oct 16 10:29:55 2026]
+Finished jobid: 14 (Rule: bwa_mem)
+20 of 46 steps (43%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Fri Oct 16 10:29:55 2026]
+rule markduplicates:
+    input: work/align/NA12892.bam
+    output: work/postprocess/NA12892.dedup.bam, work/postprocess/NA12892.dedup.bam.bai, work/postprocess/NA12892.dup_metrics.txt
+    log: logs/postprocess/NA12892.log
+    jobid: 13
+    reason: Missing output files: work/postprocess/NA12892.dedup.bam.bai, work/postprocess/NA12892.dedup.bam; Input files updated by another job: work/align/NA12892.bam
+    wildcards: sample=NA12892
+    threads: 8
+    resources: tmpdir=<TBD>, mem_mb=8000, mem=8 GB, mem_mib=7630, disk_mb=1000, disk=1 GB, disk_mib=954, slurm_account=binf6610.202710, slurm_partition=courses, runtime=60
+Shell command: 
+        (samtools sort -@ 8 -o work/postprocess/NA12892.sorted.bam work/align/NA12892.bam
+         gatk MarkDuplicates -I work/postprocess/NA12892.sorted.bam \
+             -O work/postprocess/NA12892.dedup.bam -M work/postprocess/NA12892.dup_metrics.txt
+         samtools index work/postprocess/NA12892.dedup.bam) 2> logs/postprocess/NA12892.log
+        
+Job 21 has been submitted with SLURM jobid 11134734 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_markduplicates/NA12003/11134734.log).
+Job 13 has been submitted with SLURM jobid 11134742 (log: /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_markduplicates/NA12892/11134742.log).
+[Fri Oct 16 10:30:37 2026]
+Error in rule bwa_mem:
+    message: SLURM-job '11134620' failed, SLURM status is: 'FAILED'. Reason: Unknown.For further error details see the cluster/cloud log and the log files of the involved rule(s).
+    jobid: 18
+    input: work/trim/NA07357_R1.trim.fastq.gz, work/trim/NA07357_R2.trim.fastq.gz, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.amb, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.ann, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.pac, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.sa
+    output: work/align/NA07357.bam
+    log: logs/align/NA07357.log, /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_bwa_mem/NA07357/11134620.log (check log file(s) for error details)
+    shell:
+        (bwa mem -t 8 -R '@RG\tID:NA07357\tSM:NA07357\tPL:ILLUMINA' /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa work/trim/NA07357_R1.trim.fastq.gz work/trim/NA07357_R2.trim.fastq.gz | samtools view -b -o work/align/NA07357.bam -) 2> logs/align/NA07357.log
+        (command exited with non-zero exit code)
+    external_jobid: 11134620
+--- Logging error ---
+Traceback (most recent call last):
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1164, in emit
+    self.flush()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1144, in flush
+    self.stream.flush()
+OSError: [Errno 116] Stale file handle
+Call stack:
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1032, in _bootstrap
+    self._bootstrap_inner()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 195, in _wait_thread
+    asyncio.run(self._wait_for_jobs())
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
+    self.run_forever()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
+    self._run_once()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 1999, in _run_once
+    handle._run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 185, in _wait_for_jobs
+    still_active_jobs = [
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_executor_plugin_slurm/__init__.py", line 1606, in check_active_jobs
+    self.report_job_error(j, msg=msg, aux_logs=[slurm_logfile_str])
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 93, in report_job_error
+    self.print_job_error(job_info, msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 267, in print_job_error
+    super().print_job_error(job_info, msg=msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 112, in print_job_error
+    job_info.job.log_error(msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/jobs.py", line 1147, in log_error
+    logger.error(
+Message: 'Error in rule bwa_mem, jobid: 18'
+Arguments: ()
+[Fri Oct 16 10:30:38 2026]
+Error in rule bwa_mem:
+    message: SLURM-job '11134622' failed, SLURM status is: 'FAILED'. Reason: Unknown.For further error details see the cluster/cloud log and the log files of the involved rule(s).
+    jobid: 5
+    input: work/trim/NA12878_R1.trim.fastq.gz, work/trim/NA12878_R2.trim.fastq.gz, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.amb, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.ann, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.pac, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.sa
+    output: work/align/NA12878.bam
+    log: logs/align/NA12878.log, /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_bwa_mem/NA12878/11134622.log (check log file(s) for error details)
+    shell:
+        (bwa mem -t 8 -R '@RG\tID:NA12878\tSM:NA12878\tPL:ILLUMINA' /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa work/trim/NA12878_R1.trim.fastq.gz work/trim/NA12878_R2.trim.fastq.gz | samtools view -b -o work/align/NA12878.bam -) 2> logs/align/NA12878.log
+        (command exited with non-zero exit code)
+    external_jobid: 11134622
+--- Logging error ---
+Traceback (most recent call last):
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1164, in emit
+    self.flush()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1144, in flush
+    self.stream.flush()
+OSError: [Errno 116] Stale file handle
+Call stack:
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1032, in _bootstrap
+    self._bootstrap_inner()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 195, in _wait_thread
+    asyncio.run(self._wait_for_jobs())
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
+    self.run_forever()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
+    self._run_once()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 1999, in _run_once
+    handle._run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 185, in _wait_for_jobs
+    still_active_jobs = [
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_executor_plugin_slurm/__init__.py", line 1606, in check_active_jobs
+    self.report_job_error(j, msg=msg, aux_logs=[slurm_logfile_str])
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 93, in report_job_error
+    self.print_job_error(job_info, msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 267, in print_job_error
+    super().print_job_error(job_info, msg=msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 112, in print_job_error
+    job_info.job.log_error(msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/jobs.py", line 1147, in log_error
+    logger.error(
+Message: 'Error in rule bwa_mem, jobid: 5'
+Arguments: ()
+[Fri Oct 16 10:30:40 2026]
+Error in rule bwa_mem:
+    message: SLURM-job '11134624' failed, SLURM status is: 'FAILED'. Reason: Unknown.For further error details see the cluster/cloud log and the log files of the involved rule(s).
+    jobid: 34
+    input: work/trim/NA12873_R1.trim.fastq.gz, work/trim/NA12873_R2.trim.fastq.gz, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.amb, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.ann, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.pac, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.sa
+    output: work/align/NA12873.bam
+    log: logs/align/NA12873.log, /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_bwa_mem/NA12873/11134624.log (check log file(s) for error details)
+    shell:
+        (bwa mem -t 8 -R '@RG\tID:NA12873\tSM:NA12873\tPL:ILLUMINA' /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa work/trim/NA12873_R1.trim.fastq.gz work/trim/NA12873_R2.trim.fastq.gz | samtools view -b -o work/align/NA12873.bam -) 2> logs/align/NA12873.log
+        (command exited with non-zero exit code)
+    external_jobid: 11134624
+--- Logging error ---
+Traceback (most recent call last):
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1164, in emit
+    self.flush()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1144, in flush
+    self.stream.flush()
+OSError: [Errno 116] Stale file handle
+Call stack:
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1032, in _bootstrap
+    self._bootstrap_inner()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 195, in _wait_thread
+    asyncio.run(self._wait_for_jobs())
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
+    self.run_forever()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
+    self._run_once()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 1999, in _run_once
+    handle._run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 185, in _wait_for_jobs
+    still_active_jobs = [
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_executor_plugin_slurm/__init__.py", line 1606, in check_active_jobs
+    self.report_job_error(j, msg=msg, aux_logs=[slurm_logfile_str])
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 93, in report_job_error
+    self.print_job_error(job_info, msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 267, in print_job_error
+    super().print_job_error(job_info, msg=msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 112, in print_job_error
+    job_info.job.log_error(msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/jobs.py", line 1147, in log_error
+    logger.error(
+Message: 'Error in rule bwa_mem, jobid: 34'
+Arguments: ()
+[Fri Oct 16 10:30:41 2026]
+Error in rule bwa_mem:
+    message: SLURM-job '11134625' failed, SLURM status is: 'FAILED'. Reason: Unknown.For further error details see the cluster/cloud log and the log files of the involved rule(s).
+    jobid: 26
+    input: work/trim/NA10851_R1.trim.fastq.gz, work/trim/NA10851_R2.trim.fastq.gz, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.amb, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.ann, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.pac, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.sa
+    output: work/align/NA10851.bam
+    log: logs/align/NA10851.log, /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_bwa_mem/NA10851/11134625.log (check log file(s) for error details)
+    shell:
+        (bwa mem -t 8 -R '@RG\tID:NA10851\tSM:NA10851\tPL:ILLUMINA' /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa work/trim/NA10851_R1.trim.fastq.gz work/trim/NA10851_R2.trim.fastq.gz | samtools view -b -o work/align/NA10851.bam -) 2> logs/align/NA10851.log
+        (command exited with non-zero exit code)
+    external_jobid: 11134625
+--- Logging error ---
+Traceback (most recent call last):
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1164, in emit
+    self.flush()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1144, in flush
+    self.stream.flush()
+OSError: [Errno 116] Stale file handle
+Call stack:
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1032, in _bootstrap
+    self._bootstrap_inner()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 195, in _wait_thread
+    asyncio.run(self._wait_for_jobs())
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
+    self.run_forever()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
+    self._run_once()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 1999, in _run_once
+    handle._run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 185, in _wait_for_jobs
+    still_active_jobs = [
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_executor_plugin_slurm/__init__.py", line 1606, in check_active_jobs
+    self.report_job_error(j, msg=msg, aux_logs=[slurm_logfile_str])
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 93, in report_job_error
+    self.print_job_error(job_info, msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 267, in print_job_error
+    super().print_job_error(job_info, msg=msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 112, in print_job_error
+    job_info.job.log_error(msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/jobs.py", line 1147, in log_error
+    logger.error(
+Message: 'Error in rule bwa_mem, jobid: 26'
+Arguments: ()
+[Fri Oct 16 10:30:43 2026]
+Error in rule bwa_mem:
+    message: SLURM-job '11134627' failed, SLURM status is: 'FAILED'. Reason: Unknown.For further error details see the cluster/cloud log and the log files of the involved rule(s).
+    jobid: 10
+    input: work/trim/NA12891_R1.trim.fastq.gz, work/trim/NA12891_R2.trim.fastq.gz, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.amb, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.ann, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.pac, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.sa
+    output: work/align/NA12891.bam
+    log: logs/align/NA12891.log, /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_bwa_mem/NA12891/11134627.log (check log file(s) for error details)
+    shell:
+        (bwa mem -t 8 -R '@RG\tID:NA12891\tSM:NA12891\tPL:ILLUMINA' /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa work/trim/NA12891_R1.trim.fastq.gz work/trim/NA12891_R2.trim.fastq.gz | samtools view -b -o work/align/NA12891.bam -) 2> logs/align/NA12891.log
+        (command exited with non-zero exit code)
+    external_jobid: 11134627
+--- Logging error ---
+Traceback (most recent call last):
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1164, in emit
+    self.flush()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1144, in flush
+    self.stream.flush()
+OSError: [Errno 116] Stale file handle
+Call stack:
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1032, in _bootstrap
+    self._bootstrap_inner()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 195, in _wait_thread
+    asyncio.run(self._wait_for_jobs())
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
+    self.run_forever()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
+    self._run_once()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 1999, in _run_once
+    handle._run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 185, in _wait_for_jobs
+    still_active_jobs = [
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_executor_plugin_slurm/__init__.py", line 1606, in check_active_jobs
+    self.report_job_error(j, msg=msg, aux_logs=[slurm_logfile_str])
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 93, in report_job_error
+    self.print_job_error(job_info, msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 267, in print_job_error
+    super().print_job_error(job_info, msg=msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 112, in print_job_error
+    job_info.job.log_error(msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/jobs.py", line 1147, in log_error
+    logger.error(
+Message: 'Error in rule bwa_mem, jobid: 10'
+Arguments: ()
+[Fri Oct 16 10:30:45 2026]
+Error in rule bwa_mem:
+    message: SLURM-job '11134628' failed, SLURM status is: 'FAILED'. Reason: Unknown.For further error details see the cluster/cloud log and the log files of the involved rule(s).
+    jobid: 30
+    input: work/trim/NA12813_R1.trim.fastq.gz, work/trim/NA12813_R2.trim.fastq.gz, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.amb, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.ann, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.bwt, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.pac, /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa.sa
+    output: work/align/NA12813.bam
+    log: logs/align/NA12813.log, /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_bwa_mem/NA12813/11134628.log (check log file(s) for error details)
+    shell:
+        (bwa mem -t 8 -R '@RG\tID:NA12813\tSM:NA12813\tPL:ILLUMINA' /courses/BINF6610.202710/data/refs/grch38-1000g/GRCh38_full_analysis_set_plus_decoy_hla.fa work/trim/NA12813_R1.trim.fastq.gz work/trim/NA12813_R2.trim.fastq.gz | samtools view -b -o work/align/NA12813.bam -) 2> logs/align/NA12813.log
+        (command exited with non-zero exit code)
+    external_jobid: 11134628
+--- Logging error ---
+Traceback (most recent call last):
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1164, in emit
+    self.flush()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1144, in flush
+    self.stream.flush()
+OSError: [Errno 116] Stale file handle
+Call stack:
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1032, in _bootstrap
+    self._bootstrap_inner()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 195, in _wait_thread
+    asyncio.run(self._wait_for_jobs())
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
+    self.run_forever()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
+    self._run_once()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 1999, in _run_once
+    handle._run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 185, in _wait_for_jobs
+    still_active_jobs = [
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_executor_plugin_slurm/__init__.py", line 1606, in check_active_jobs
+    self.report_job_error(j, msg=msg, aux_logs=[slurm_logfile_str])
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 93, in report_job_error
+    self.print_job_error(job_info, msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 267, in print_job_error
+    super().print_job_error(job_info, msg=msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 112, in print_job_error
+    job_info.job.log_error(msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/jobs.py", line 1147, in log_error
+    logger.error(
+Message: 'Error in rule bwa_mem, jobid: 30'
+Arguments: ()
+[Fri Oct 16 10:31:37 2026]
+Error in rule markduplicates:
+    message: SLURM-job '11134734' failed, SLURM status is: 'FAILED'. Reason: Unknown.For further error details see the cluster/cloud log and the log files of the involved rule(s).
+    jobid: 21
+    input: work/align/NA12003.bam
+    output: work/postprocess/NA12003.dedup.bam, work/postprocess/NA12003.dedup.bam.bai, work/postprocess/NA12003.dup_metrics.txt
+    log: logs/postprocess/NA12003.log, /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_markduplicates/NA12003/11134734.log (check log file(s) for error details)
+    shell:
+        
+        (samtools sort -@ 8 -o work/postprocess/NA12003.sorted.bam work/align/NA12003.bam
+         gatk MarkDuplicates -I work/postprocess/NA12003.sorted.bam \
+             -O work/postprocess/NA12003.dedup.bam -M work/postprocess/NA12003.dup_metrics.txt
+         samtools index work/postprocess/NA12003.dedup.bam) 2> logs/postprocess/NA12003.log
+        
+        (command exited with non-zero exit code)
+    external_jobid: 11134734
+--- Logging error ---
+Traceback (most recent call last):
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1164, in emit
+    self.flush()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1144, in flush
+    self.stream.flush()
+OSError: [Errno 116] Stale file handle
+Call stack:
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1032, in _bootstrap
+    self._bootstrap_inner()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 195, in _wait_thread
+    asyncio.run(self._wait_for_jobs())
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
+    self.run_forever()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
+    self._run_once()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 1999, in _run_once
+    handle._run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 185, in _wait_for_jobs
+    still_active_jobs = [
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_executor_plugin_slurm/__init__.py", line 1606, in check_active_jobs
+    self.report_job_error(j, msg=msg, aux_logs=[slurm_logfile_str])
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 93, in report_job_error
+    self.print_job_error(job_info, msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 267, in print_job_error
+    super().print_job_error(job_info, msg=msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 112, in print_job_error
+    job_info.job.log_error(msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/jobs.py", line 1147, in log_error
+    logger.error(
+Message: 'Error in rule markduplicates, jobid: 21'
+Arguments: ()
+[Fri Oct 16 10:31:40 2026]
+Error in rule markduplicates:
+    message: SLURM-job '11134742' failed, SLURM status is: 'FAILED'. Reason: Unknown.For further error details see the cluster/cloud log and the log files of the involved rule(s).
+    jobid: 13
+    input: work/align/NA12892.bam
+    output: work/postprocess/NA12892.dedup.bam, work/postprocess/NA12892.dedup.bam.bai, work/postprocess/NA12892.dup_metrics.txt
+    log: logs/postprocess/NA12892.log, /home/atre.m/variant-call-pipeline/.snakemake/slurm_logs/rule_markduplicates/NA12892/11134742.log (check log file(s) for error details)
+    shell:
+        
+        (samtools sort -@ 8 -o work/postprocess/NA12892.sorted.bam work/align/NA12892.bam
+         gatk MarkDuplicates -I work/postprocess/NA12892.sorted.bam \
+             -O work/postprocess/NA12892.dedup.bam -M work/postprocess/NA12892.dup_metrics.txt
+         samtools index work/postprocess/NA12892.dedup.bam) 2> logs/postprocess/NA12892.log
+        
+        (command exited with non-zero exit code)
+    external_jobid: 11134742
+--- Logging error ---
+Traceback (most recent call last):
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1164, in emit
+    self.flush()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1144, in flush
+    self.stream.flush()
+OSError: [Errno 116] Stale file handle
+Call stack:
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1032, in _bootstrap
+    self._bootstrap_inner()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 195, in _wait_thread
+    asyncio.run(self._wait_for_jobs())
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
+    self.run_forever()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
+    self._run_once()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/base_events.py", line 1999, in _run_once
+    handle._run()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 185, in _wait_for_jobs
+    still_active_jobs = [
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_executor_plugin_slurm/__init__.py", line 1606, in check_active_jobs
+    self.report_job_error(j, msg=msg, aux_logs=[slurm_logfile_str])
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 93, in report_job_error
+    self.print_job_error(job_info, msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/remote.py", line 267, in print_job_error
+    super().print_job_error(job_info, msg=msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_interface_executor_plugins/executors/base.py", line 112, in print_job_error
+    job_info.job.log_error(msg, **kwargs)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/jobs.py", line 1147, in log_error
+    logger.error(
+Message: 'Error in rule markduplicates, jobid: 13'
+Arguments: ()
+Shutting down, this might take some time.
+--- Logging error ---
+Traceback (most recent call last):
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1164, in emit
+    self.flush()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1144, in flush
+    self.stream.flush()
+OSError: [Errno 116] Stale file handle
+Call stack:
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/bin/snakemake", line 10, in <module>
+    sys.exit(main())
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/cli.py", line 2401, in main
+    success = args_to_api(args, parser)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/cli.py", line 2316, in args_to_api
+    dag_api.execute_workflow(
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/api.py", line 687, in execute_workflow
+    workflow.execute(
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/workflow.py", line 1506, in execute
+    success = self.scheduler.schedule()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/scheduling/job_scheduler.py", line 251, in schedule
+    logger.info("Shutting down, this might take some time.")
+Message: 'Shutting down, this might take some time.'
+Arguments: ()
+Cleaning up SLURM log files older than 10 day(s).
+--- Logging error ---
+Traceback (most recent call last):
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1164, in emit
+    self.flush()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1144, in flush
+    self.stream.flush()
+OSError: [Errno 116] Stale file handle
+Call stack:
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/bin/snakemake", line 10, in <module>
+    sys.exit(main())
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/cli.py", line 2401, in main
+    success = args_to_api(args, parser)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/cli.py", line 2316, in args_to_api
+    dag_api.execute_workflow(
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/api.py", line 687, in execute_workflow
+    workflow.execute(
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/workflow.py", line 1506, in execute
+    success = self.scheduler.schedule()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/scheduling/job_scheduler.py", line 252, in schedule
+    self._executor.shutdown()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_executor_plugin_slurm/__init__.py", line 584, in shutdown
+    self.clean_old_logs()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake_executor_plugin_slurm/__init__.py", line 637, in clean_old_logs
+    self.logger.info(f"Cleaning up SLURM log files older than {age_cutoff} day(s).")
+Message: 'Cleaning up SLURM log files older than 10 day(s).'
+Arguments: ()
+Exiting because a job execution failed. Look above for error messages
+--- Logging error ---
+Traceback (most recent call last):
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1164, in emit
+    self.flush()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1144, in flush
+    self.stream.flush()
+OSError: [Errno 116] Stale file handle
+Call stack:
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/bin/snakemake", line 10, in <module>
+    sys.exit(main())
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/cli.py", line 2401, in main
+    success = args_to_api(args, parser)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/cli.py", line 2316, in args_to_api
+    dag_api.execute_workflow(
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/api.py", line 687, in execute_workflow
+    workflow.execute(
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/workflow.py", line 1506, in execute
+    success = self.scheduler.schedule()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/scheduling/job_scheduler.py", line 254, in schedule
+    logger.error(_ERROR_MSG_FINAL)
+Message: 'Exiting because a job execution failed. Look above for error messages'
+Arguments: ()
+Complete log(s): /home/atre.m/variant-call-pipeline/.snakemake/log/2026-10-16T102535.217712.snakemake.log
+--- Logging error ---
+Traceback (most recent call last):
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1164, in emit
+    self.flush()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1144, in flush
+    self.stream.flush()
+OSError: [Errno 116] Stale file handle
+Call stack:
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/bin/snakemake", line 10, in <module>
+    sys.exit(main())
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/cli.py", line 2401, in main
+    success = args_to_api(args, parser)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/cli.py", line 2316, in args_to_api
+    dag_api.execute_workflow(
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/api.py", line 687, in execute_workflow
+    workflow.execute(
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/workflow.py", line 1556, in execute
+    self.logger_manager.logfile_hint()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/logging.py", line 754, in logfile_hint
+    self.logger.info(f"Complete log(s): {log_paths}")
+Message: 'Complete log(s): /home/atre.m/variant-call-pipeline/.snakemake/log/2026-10-16T102535.217712.snakemake.log'
+Arguments: ()
+Elapsed time: 0:07:05.102264
+--- Logging error ---
+Traceback (most recent call last):
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1164, in emit
+    self.flush()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1144, in flush
+    self.stream.flush()
+OSError: [Errno 116] Stale file handle
+Call stack:
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/bin/snakemake", line 10, in <module>
+    sys.exit(main())
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/cli.py", line 2401, in main
+    success = args_to_api(args, parser)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/cli.py", line 2316, in args_to_api
+    dag_api.execute_workflow(
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/api.py", line 687, in execute_workflow
+    workflow.execute(
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/workflow.py", line 1557, in execute
+    self.log_workflow_runtime()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/workflow.py", line 1616, in log_workflow_runtime
+    logger.info(f"Elapsed time: {datetime.now() - self.start_time}")
+Message: 'Elapsed time: 0:07:05.102264'
+Arguments: ()
+WorkflowError:
+At least one job did not complete successfully.
+--- Logging error ---
+Traceback (most recent call last):
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/cli.py", line 2316, in args_to_api
+    dag_api.execute_workflow(
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/api.py", line 687, in execute_workflow
+    workflow.execute(
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/workflow.py", line 1563, in execute
+    raise WorkflowError("At least one job did not complete successfully.")
+snakemake_interface_common.exceptions.WorkflowError: At least one job did not complete successfully.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1164, in emit
+    self.flush()
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/logging/__init__.py", line 1144, in flush
+    self.stream.flush()
+OSError: [Errno 116] Stale file handle
+Call stack:
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/bin/snakemake", line 10, in <module>
+    sys.exit(main())
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/cli.py", line 2401, in main
+    success = args_to_api(args, parser)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/cli.py", line 2375, in args_to_api
+    snakemake_api.print_exception(e)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/api.py", line 271, in print_exception
+    print_exception(ex, linemaps)
+  File "/courses/BINF6610.202710/shared/env/binf6610-workflows/lib/python3.12/site-packages/snakemake/exceptions.py", line 183, in print_exception
+    logger.error(
+Message: 'WorkflowError:\nAt least one job did not complete successfully.'
+Arguments: ()
