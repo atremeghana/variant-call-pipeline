@@ -18,4 +18,4 @@ the base image to an exact tag.
 
 ## The image in ECR
 
-<account>.dkr.ecr.us-east-2.amazonaws.com/variant-call@sha256:19caab07b5ccddcb0eff30441a84a2b5ead0db6f2ff6d693834e03c0725b53b5
+<account>.dkr.ecr.us-east-2.amazonaws.com/variant-call@sha256:99f238c963efd572c576b9c52ee39aec5f37ce7d48b9e652f3750b387de09b25

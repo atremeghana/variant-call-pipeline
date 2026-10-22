@@ -1,0 +1,6 @@
+smoke-run/cohort.filtered.vcf.gz (laptop, week 1):
+e9f8c4e1511a3e009f12192af3d0c36c563839370eb71a731b3cc4e55c2097c5  -
+aws-run/cohort.filtered.vcf.gz (AWS Batch, week 6):
+e9f8c4e1511a3e009f12192af3d0c36c563839370eb71a731b3cc4e55c2097c5  -
+They are identical: the Batch job used the same pinned tool versions (containers/variant-call/Dockerfile)
+as the laptop's week-1 run, on the same smoke dataset and region.

@@ -15,6 +15,6 @@ echo "[batch_run] 2/3 running the pipeline: REF=${REF_NAME} REGION=${REGION:-?} 
 cd "${work}/data"                         # the samplesheet's FASTQ paths are relative to its folder
 REF="${work}/data/${REF_NAME}" bash /pipeline/run_pipeline.sh samplesheet.csv "${work}/out"
 # 3 · copy out
-echo "[batch_run] 3/3 copying ${work}/out/results/ to ${RESULTS%/}/${job}/"
-aws s3 cp "${work}/out/results/" "${RESULTS%/}/${job}/" --recursive --no-progress
+echo "[batch_run] 3/3 copying ${work}/out/ to ${RESULTS%/}/${job}/"
+aws s3 cp "${work}/out/" "${RESULTS%/}/${job}/" --recursive --no-progress
 echo "[batch_run] done"
