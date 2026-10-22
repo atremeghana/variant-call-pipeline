@@ -1,0 +1,11 @@
+.git
+**/.DS_Store
+results
+work
+.nextflow
+.nextflow.log*
+.snakemake
+smoke-run*
+cluster-run*
+aws-run*
+*.sif

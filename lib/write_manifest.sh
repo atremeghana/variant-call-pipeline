@@ -71,7 +71,9 @@ git_sha() {
 SHA=$(git_sha)
 
 # --- where: a container, a Slurm job, or neither ---------------------------------
-if [[ -n "${APPTAINER_CONTAINER:-}" ]]; then
+if [[ -n "${AWS_BATCH_JOB_ID:-}" ]]; then
+    KIND=aws-batch; IMPL=aws-batch
+elif [[ -n "${APPTAINER_CONTAINER:-}" ]]; then
     KIND=singularity-hpc; IMPL=singularity
 elif [[ -n "${SLURM_JOB_ID:-}" ]]; then
     KIND=slurm; IMPL=slurm
@@ -187,7 +189,10 @@ OUT="${RES}/manifest.json"
     printf '    "host": %s,\n'           "$(js "$(hostname)")"
     printf '    "slurm_job_id": %s,\n'   "$(js "${SLURM_JOB_ID:-none}")"
     printf '    "slurm_cpus": %s,\n'     "$(js "${SLURM_CPUS_PER_TASK:-none}")"
-    printf '    "container": %s\n'       "$(js "${APPTAINER_CONTAINER:-none}")"
+    printf '    "container": %s,\n'      "$(js "${APPTAINER_CONTAINER:-none}")"
+    printf '    "batch_job_id": %s,\n'   "$(js "${AWS_BATCH_JOB_ID:-none}")"
+    printf '    "batch_queue": %s,\n'    "$(js "${AWS_BATCH_JQ_NAME:-none}")"
+    printf '    "batch_compute_environment": %s\n' "$(js "${AWS_BATCH_CE_NAME:-none}")"
     printf '  },\n'
     printf '  "reference": {"genome": %s' "$(js "${REFERENCE}")"
     [[ -n "${ANNOTATION:-}" ]] && printf ', "annotation": %s' "$(js "${ANNOTATION}")"

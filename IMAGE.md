@@ -15,3 +15,7 @@ To rerun this in a year: pull the image by the digest above (tags can move, dige
 docker pull docker.io/atremeghana/variant-call@sha256:9fecb0cbe58d43fe4040d29188ebdefb0cc66a64fd5d560d49855d333395dc6c,
 or rebuild from containers/variant-call/Dockerfile, which pins every tool to an exact version and
 the base image to an exact tag.
+
+## The image in ECR
+
+<account>.dkr.ecr.us-east-2.amazonaws.com/variant-call@sha256:19caab07b5ccddcb0eff30441a84a2b5ead0db6f2ff6d693834e03c0725b53b5
