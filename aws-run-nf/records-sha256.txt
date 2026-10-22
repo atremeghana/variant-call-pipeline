@@ -1,0 +1,12 @@
+aws-run/cohort.filtered.vcf.gz (Part A, one Batch job running the whole bash pipeline):
+e9f8c4e1511a3e009f12192af3d0c36c563839370eb71a731b3cc4e55c2097c5  -
+aws-run-nf/cohort.filtered.vcf.gz (Part B, Nextflow sending each stage to Batch):
+f2242b4153efe41b2c6cffe9e826bed5d3d49f8135d5a3d30562bba8f31fa74f  -
+They differ because: the two runs used the same pinned tool versions and the same smoke dataset,
+but ran through different orchestration layers - Part A executed the pipeline's own bash script
+directly inside one container, while Part B had Nextflow invoke each GATK/samtools stage as a
+separate task. The most likely source of the difference is GATK HaplotypeCaller's documented
+floating-point non-determinism in its multi-threaded PairHMM implementation (the same effect
+observed between the Nextflow and Snakemake runs on Explorer in weeks 4 and 5), which can
+produce small genotype-likelihood differences between runs even with identical inputs and tool
+versions.
