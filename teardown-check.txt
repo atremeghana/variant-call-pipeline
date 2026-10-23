@@ -1,0 +1,26 @@
+BINF6610 Assignment 6, teardown check, 2026-10-23 17:15 UTC, region us-east-2, signed in as AccountFullAccessRole
+
+  ok batch job queues                   nothing
+  ok batch compute environments         nothing
+  ok batch job definitions (ACTIVE)     nothing
+  ok ecs task definitions (ACTIVE)      nothing
+  ok ecs task definitions (INACTIVE)    nothing
+  ok ecs clusters                       nothing
+  ok ecr repositories                   nothing
+  ok s3 buckets                         nothing
+  ok cloudwatch log groups              nothing
+  ok efs file systems                   nothing
+  ok iam roles you made                 nothing
+  ok ec2 instances (not terminated)     nothing
+  ok ebs volumes                        nothing
+  ok elastic ip addresses               nothing
+  ok nat gateways                       nothing
+  ok network interfaces (available)     nothing
+
+  not counted, because nothing bills for them:
+     job definitions (INACTIVE)         9
+     service-linked roles (Batch, ECS)  AWSServiceRoleForBatch AWSServiceRoleForECS
+     finished jobs                      listed for 7 days on Batch's Jobs page
+     your ECR image, on this laptop     not looked at: Docker is not running
+
+CLEAN
