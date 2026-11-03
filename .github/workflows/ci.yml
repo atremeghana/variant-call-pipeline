@@ -1,0 +1,65 @@
+# CI: the checks every change gets, on GitHub's machine, before it joins main.
+#
+# Two jobs, the cheap one first. `lint` reads the scripts and needs nothing else;
+# `smoke` builds the image and runs the whole pipeline on the smoke dataset, and
+# starts only when `lint` has passed.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+
+      - name: ShellCheck every script of the bash pipeline
+        run: |
+          shellcheck --version | sed -n 2p
+          shellcheck --severity=error run_pipeline.sh run_sample.sh run_cohort.sh lib/*.sh bin/*.sh aws/batch_run.sh
+
+  smoke:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Build the image from containers/Dockerfile
+        run: docker build -t variant-call:ci containers/
+
+      - name: Run the pipeline on the smoke dataset, inside the image
+        run: |
+          docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
+            -v "$PWD":/repo -w /repo/tests/smoke \
+            -e REF=/repo/tests/smoke/smoke.fa -e REGION=smoke_1mb -e THREADS=4 \
+            variant-call:ci bash /repo/run_pipeline.sh samplesheet.csv /repo/ci-out
+
+      - name: Check the manifest against the course's contract
+        run: python3 tools/check_manifest.py ci-out/results/manifest.json --results-dir ci-out/results
+
+      - name: The manifest names the commit that was tested
+        run: |
+          recorded=$(python3 -c 'import json; print(json.load(open("ci-out/results/manifest.json"))["pipeline"]["git_sha"])')
+          echo "manifest: ${recorded}"
+          echo "tested:   ${GITHUB_SHA}"
+          [ "${recorded}" = "${GITHUB_SHA}" ]
+
+      - name: Compare the variant records with aws-run/, made by the same image
+        run: |
+          records() {
+            docker run --rm --user "$(id -u):$(id -g)" -v "$PWD":/repo -w /repo variant-call:ci \
+              bash -c "bcftools view -H $1 | sha256sum | cut -d' ' -f1"
+          }
+          expected=$(records aws-run/cohort.filtered.vcf.gz)
+          got=$(records ci-out/results/cohort.filtered.vcf.gz)
+          echo "aws-run/:  ${expected}"
+          echo "this run:  ${got}"
+          [ "${got}" = "${expected}" ]
