@@ -43,11 +43,11 @@ jobs:
             variant-call:ci bash /repo/run_pipeline.sh samplesheet.csv /repo/ci-out
 
       - name: Check the manifest against the course's contract
-        run: python3 tools/check_manifest.py ci-out/results/manifest.json --results-dir ci-out/results
+        run: python3 tools/check_manifest.py ci-out/manifest.json --results-dir ci-out
 
       - name: The manifest names the commit that was tested
         run: |
-          recorded=$(python3 -c 'import json; print(json.load(open("ci-out/results/manifest.json"))["pipeline"]["git_sha"])')
+          recorded=$(python3 -c 'import json; print(json.load(open("ci-out/manifest.json"))["pipeline"]["git_sha"])')
           echo "manifest: ${recorded}"
           echo "tested:   ${GITHUB_SHA}"
           [ "${recorded}" = "${GITHUB_SHA}" ]
@@ -59,7 +59,7 @@ jobs:
               bash -c "bcftools view -H $1 | sha256sum | cut -d' ' -f1"
           }
           expected=$(records aws-run/cohort.filtered.vcf.gz)
-          got=$(records ci-out/results/cohort.filtered.vcf.gz)
+          got=$(records ci-out/analyze/cohort.filtered.vcf.gz)
           echo "aws-run/:  ${expected}"
           echo "this run:  ${got}"
           [ "${got}" = "${expected}" ]
