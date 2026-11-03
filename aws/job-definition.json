@@ -1,0 +1,26 @@
+{
+  "jobDefinitionName": "variant-call",
+  "type": "container",
+  "platformCapabilities": ["FARGATE"],
+  "containerProperties": {
+    "image": "<image>",
+    "command": ["bash", "/usr/local/bin/batch_run.sh"],
+    "resourceRequirements": [
+      {"type": "VCPU", "value": "2"},
+      {"type": "MEMORY", "value": "8192"}
+    ],
+    "environment": [
+      {"name": "DATA", "value": "s3://binf6610-atrem/smoke"},
+      {"name": "RESULTS", "value": "s3://binf6610-atrem/results"},
+      {"name": "REF_NAME", "value": "smoke.fa"},
+      {"name": "REGION", "value": "smoke_1mb"},
+      {"name": "THREADS", "value": "2"},
+      {"name": "PIPELINE_VERSION", "value": "<version>"},
+      {"name": "GIT_SHA", "value": "<commit>"}
+    ],
+    "jobRoleArn": "arn:aws:iam::<account>:role/binf6610-batch-job",
+    "executionRoleArn": "arn:aws:iam::<account>:role/binf6610-batch-execution",
+    "networkConfiguration": {"assignPublicIp": "ENABLED"},
+    "runtimePlatform": {"cpuArchitecture": "X86_64", "operatingSystemFamily": "LINUX"}
+  }
+}
