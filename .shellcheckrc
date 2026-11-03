@@ -1,0 +1,4 @@
+# ShellCheck reads this file for every script below this folder.
+# Most files in lib/ and stages/ are sourced, never executed, so they have no #! line
+# telling ShellCheck which shell they are written for. This says it once, for all of them.
+shell=bash

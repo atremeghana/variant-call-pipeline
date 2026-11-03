@@ -1,0 +1,4 @@
+sample_id,condition,replicate,library_type,r1_fastq,r2_fastq
+smoke_01,unaffected,1,paired,smoke_01_R1.fastq.gz,smoke_01_R2.fastq.gz
+smoke_02,affected,1,paired,smoke_02_R1.fastq.gz,smoke_02_R2.fastq.gz
+smoke_03,affected,2,single,smoke_03_R1.fastq.gz,
