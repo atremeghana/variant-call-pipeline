@@ -1,4 +1,4 @@
-BINF6610 Assignment 6, teardown check, 2026-10-23 17:15 UTC, region us-east-2, signed in as AccountFullAccessRole
+BINF6610 Assignment 8, teardown check, 2026-11-04 03:23 UTC, region us-east-2, signed in as AccountFullAccessRole
 
   ok batch job queues                   nothing
   ok batch compute environments         nothing
@@ -11,6 +11,8 @@ BINF6610 Assignment 6, teardown check, 2026-10-23 17:15 UTC, region us-east-2, s
   ok cloudwatch log groups              nothing
   ok efs file systems                   nothing
   ok iam roles you made                 nothing
+  ok iam users                          nothing
+  ok iam access keys                    nothing
   ok ec2 instances (not terminated)     nothing
   ok ebs volumes                        nothing
   ok elastic ip addresses               nothing
@@ -18,7 +20,7 @@ BINF6610 Assignment 6, teardown check, 2026-10-23 17:15 UTC, region us-east-2, s
   ok network interfaces (available)     nothing
 
   not counted, because nothing bills for them:
-     job definitions (INACTIVE)         9
+     job definitions (INACTIVE)         10
      service-linked roles (Batch, ECS)  AWSServiceRoleForBatch AWSServiceRoleForECS
      finished jobs                      listed for 7 days on Batch's Jobs page
      your ECR image, on this laptop     not looked at: Docker is not running
