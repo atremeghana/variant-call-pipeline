@@ -1,0 +1,82 @@
+# CD: every version tag is built, pushed to ECR and run once on Batch.
+#
+# Push a tag such as v1.0.0 and this runs. It signs in to your AWS project with
+# the access key of an IAM user made for it (a project cannot use OIDC), builds
+# the image from aws/Dockerfile, pushes it to ECR as variant-call:1.0.0,
+# registers a new revision of the job definition with that image, named by its
+# digest, and runs the smoke dataset on Batch with it, waiting until the job has
+# finished.
+name: CD
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+  REPOSITORY: variant-call
+  JOB_DEFINITION: variant-call
+  QUEUE: binf6610-queue
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the tagged commit
+        uses: actions/checkout@v7.0.1
+
+      - name: Sign in to your AWS project with the CD user's access key
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: true
+
+      - name: Work out the version and the image's name
+        run: |
+          account=$(aws sts get-caller-identity --query Account --output text)
+          version=${GITHUB_REF_NAME#v}               # the tag v1.0.0 is version 1.0.0
+          echo "ACCOUNT=${account}" >> "$GITHUB_ENV"
+          echo "VERSION=${version}" >> "$GITHUB_ENV"
+          echo "IMAGE=${account}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPOSITORY}:${version}" >> "$GITHUB_ENV"
+
+      - name: Build the image and push it to ECR as this version
+        run: |
+          # aws/Dockerfile copies the AWS CLI from Amazon's public registry. Signed in, that
+          # download counts against your account, not against the GitHub machine's shared address.
+          aws ecr-public get-login-password --region us-east-1 \
+            | docker login --username AWS --password-stdin public.ecr.aws
+          aws ecr get-login-password | docker login --username AWS --password-stdin "${IMAGE%%/*}"
+          docker build -f aws/Dockerfile -t "${IMAGE}" .
+          docker push "${IMAGE}"
+          echo "PINNED=$(docker inspect --format '{{index .RepoDigests 0}}' "${IMAGE}")" >> "$GITHUB_ENV"
+
+      - name: Deploy it - a new revision of the job definition, with this image
+        run: |
+          sed -e "s|<account>|${ACCOUNT}|g" -e "s|<image>|${PINNED}|g" \
+              -e "s|<version>|${VERSION}|g" -e "s|<commit>|${GITHUB_SHA}|g" \
+              aws/job-definition.json > job-definition.filled.json
+          revision=$(aws batch register-job-definition --cli-input-json file://job-definition.filled.json \
+                     --query revision --output text)
+          echo "registered ${JOB_DEFINITION}:${revision}"
+          echo "REVISION=${revision}" >> "$GITHUB_ENV"
+
+      - name: Run the smoke dataset on Batch with this release, and wait for it
+        run: |
+          job=$(aws batch submit-job --job-name "smoke-${GITHUB_REF_NAME//./-}" \
+                --job-queue "${QUEUE}" --job-definition "${JOB_DEFINITION}:${REVISION}" --query jobId --output text)
+          echo "job ${job}"
+          while true; do
+            status=$(aws batch describe-jobs --jobs "${job}" --query 'jobs[0].status' --output text)
+            echo "$(date -u +%H:%M:%S) ${status}"
+            case "${status}" in
+              SUCCEEDED) break ;;
+              FAILED) aws batch describe-jobs --jobs "${job}" --query 'jobs[0].statusReason' --output text
+                      exit 1 ;;
+            esac
+            sleep 20
+          done
