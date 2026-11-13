@@ -1,0 +1,24 @@
+# BINF6610 assignment cohort — variant-call
+#
+# Verified against live ENA and the 1000 Genomes pedigree file (20130606_g1k.ped)
+# on 2026-08-13. Read length was MEASURED from the first reads of each file, not
+# derived from ENA's base_count/read_count — that estimate was wrong for 4 of the
+# 8 runs (it reported 299 bp for 150 bp data, because those runs count spots
+# rather than reads).
+#
+# sex, population and the pedigree columns are REAL, from the 1000 Genomes panel.
+# phenotype is SYNTHETIC — invented for this course. See is_synthetic_phenotype.
+#
+# The synthetic labels are assigned so they correlate with nothing technical:
+# affected = 2M/2F, unaffected = 2M/2F, all three studies appear in both groups,
+# and the two single-end samples are one per group. Any difference a student finds
+# between the groups therefore cannot be an artefact of how the data was made.
+sample_id	phenotype	sex	population	family	father	mother	run	read_length	bases_gb	study	native_layout	library_type	is_synthetic_phenotype
+NA12878	affected	female	CEU	1463	NA12891	NA12892	ERR16657781	151	86	PRJEB107097	PAIRED	paired	true
+NA12891	affected	male	CEU	1463	0	0	ERR3989341	150	116	PRJEB36890	PAIRED	paired	true
+NA12892	unaffected	female	CEU	1463	0	0	ERR3989342	150	116	PRJEB36890	PAIRED	single	true
+NA07357	unaffected	male	CEU	1345	0	0	ERR1955334	150	129	PRJEB19931	PAIRED	paired	true
+NA12003	affected	male	CEU	1420	0	0	ERR1955342	150	136	PRJEB19931	PAIRED	single	true
+NA10851	unaffected	male	CEU	1344	0	0	ERR1955337	150	123	PRJEB19931	PAIRED	paired	true
+NA12813	affected	female	CEU	1454	0	0	ERR1955347	150	121	PRJEB19931	PAIRED	paired	true
+NA12873	unaffected	female	CEU	1459	0	0	ERR1955348	150	123	PRJEB19931	PAIRED	paired	true
